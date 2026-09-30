@@ -54,6 +54,12 @@ bool SystemUsesLightTheme() {
 // 值为 0x00RRGGBB（低 24 位是 RRGGBB，高 8 位 alpha 通常 0x00）
 // 返回 true 表示读到有效值，并写入 r/g/b（0~1）
 bool ReadSystemAccentColor(float& r, float& g, float& b) {
+    // MODERNDESIGN_FORCE_FALLBACK_ACCENT=1 → 跳过系统读取（CI 验证默认墨绿用）
+    wchar_t nv[16] = {};
+    if (GetEnvironmentVariableW(L"MODERNDESIGN_FORCE_FALLBACK_ACCENT", nv, 16) > 0 &&
+        (_wcsicmp(nv, L"1") == 0 || _wcsicmp(nv, L"true") == 0)) {
+        return false;
+    }
     HKEY key = nullptr;
     if (RegOpenKeyExW(HKEY_CURRENT_USER,
                       L"Software\\Microsoft\\Windows\\DWM",
