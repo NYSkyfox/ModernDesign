@@ -43,10 +43,10 @@ struct Theme {
     float textOnAccentR = 1.0f;   // #FFFFFF
     float textOnAccentG = 1.0f;
     float textOnAccentB = 1.0f;
-    // 强调色（蓝）
-    float accentR = 0.0f;         // #0078D4
-    float accentG = 0.471f;
-    float accentB = 0.831f;
+    // 强调色（默认墨绿 #013220；运行时优先取 Windows 强调色）
+    float accentR = 0.00392f;     // #013220
+    float accentG = 0.19608f;
+    float accentB = 0.12549f;
     // 按钮填充
     float buttonFillR = 0.949f;   // #F2F2F2
     float buttonFillG = 0.949f;
@@ -112,6 +112,9 @@ struct Theme {
 
     // 切换到浅色/深色
     void SetLightMode(bool light);
+
+    // 设置强调色（0~1，运行时从 Windows 注册表读取，失败取默认墨绿）
+    void SetAccent(float r, float g, float b);
 
     // 深色模式默认值（覆盖上面字段）
     void ApplyDark();

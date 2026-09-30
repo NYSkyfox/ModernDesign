@@ -50,6 +50,35 @@ bool SystemUsesLightTheme() {
     return value != 0;
 }
 
+// 读取 Windows 强调色（HKCU\...\Windows\DWM\AccentColor）
+// 值为 0x00RRGGBB（低 24 位是 RRGGBB，高 8 位 alpha 通常 0x00）
+// 返回 true 表示读到有效值，并写入 r/g/b（0~1）
+bool ReadSystemAccentColor(float& r, float& g, float& b) {
+    HKEY key = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER,
+                      L"Software\\Microsoft\\Windows\\DWM",
+                      0, KEY_READ, &key) != ERROR_SUCCESS) {
+        return false;
+    }
+    DWORD value = 0;
+    DWORD size = sizeof(value);
+    DWORD type = 0;
+    LONG rc = RegQueryValueExW(key, L"AccentColor", nullptr, &type,
+                               reinterpret_cast<BYTE*>(&value), &size);
+    RegCloseKey(key);
+    if (rc != ERROR_SUCCESS || type != REG_DWORD) return false;
+
+    int rr = static_cast<int>(value & 0xFF);
+    int gg = static_cast<int>((value >> 8) & 0xFF);
+    int bb = static_cast<int>((value >> 16) & 0xFF);
+    if (rr == 0 && gg == 0 && bb == 0) return false;   // 纯黑视为未设置
+
+    r = static_cast<float>(rr) / 255.0f;
+    g = static_cast<float>(gg) / 255.0f;
+    b = static_cast<float>(bb) / 255.0f;
+    return true;
+}
+
 constexpr wchar_t kWindowClassName[] = L"ModernDesignAppWindow";
 
 } // namespace
@@ -86,6 +115,7 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
     // 3. 系统主题
     currentLight_ = SystemUsesLightTheme();
     theme_.SetLightMode(currentLight_);
+    ApplySystemAccent();   // 优先 Windows 强调色，失败用默认墨绿
 
     // 4. 注册窗口类
     if (!RegisterWindowClass(hInstance)) {
@@ -146,6 +176,9 @@ int App::Run() {
                 currentLight_ = lightNow;
                 theme_.SetLightMode(lightNow);
                 OnThemeChanged();
+                needsDraw_ = true;
+            }
+            if (ApplySystemAccent()) {
                 needsDraw_ = true;
             }
         }
@@ -287,6 +320,21 @@ void App::UpdateDpiScale() {
     }
     if (dpi == 0) dpi = 96;
     dpiScale_ = static_cast<float>(dpi) / 96.0f;
+}
+
+bool App::ApplySystemAccent() {
+    // 优先 Windows 强调色；读不到则保持 Theme 默认（墨绿）
+    float r = theme_.accentR, g = theme_.accentG, b = theme_.accentB;
+    ReadSystemAccentColor(r, g, b);
+
+    if (r == lastAccentR_ && g == lastAccentG_ && b == lastAccentB_) {
+        return false;   // 无变化
+    }
+    lastAccentR_ = r;
+    lastAccentG_ = g;
+    lastAccentB_ = b;
+    theme_.SetAccent(r, g, b);
+    return true;
 }
 
 void App::RequestQuit(HWND hwnd) {

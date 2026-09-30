@@ -15,7 +15,7 @@ void Theme::SetLightMode(bool light) {
         textPrimaryR = textPrimaryG = textPrimaryB = 0.0f;
         textSecondaryR = 0.376f; textSecondaryG = 0.369f; textSecondaryB = 0.365f;
         textOnAccentR = textOnAccentG = textOnAccentB = 1.0f;
-        accentR = 0.0f; accentG = 0.471f; accentB = 0.831f;
+        // accent 不在此处重置：它由 SetAccent 独立管理（优先取 Windows 强调色）
         buttonFillR = buttonFillG = buttonFillB = 0.949f;
         buttonBorderR = buttonBorderG = buttonBorderB = 0.0f;
         buttonBorderA = 0.12f;
@@ -25,6 +25,12 @@ void Theme::SetLightMode(bool light) {
     } else {
         ApplyDark();
     }
+}
+
+void Theme::SetAccent(float r, float g, float b) {
+    accentR = r;
+    accentG = g;
+    accentB = b;
 }
 
 void Theme::ApplyDark() {

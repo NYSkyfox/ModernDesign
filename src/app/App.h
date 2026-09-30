@@ -79,6 +79,8 @@ private:
     HRESULT CreateMainWindow(HINSTANCE hInstance, int nCmdShow);
     void UpdateClientSize();
     void UpdateDpiScale();
+    // 从 Windows 注册表读取强调色并应用（读不到则用默认墨绿），返回是否变化
+    bool ApplySystemAccent();
 
     // 消息循环辅助
     static void RequestQuit(HWND hwnd);
@@ -95,6 +97,9 @@ private:
     ULONGLONG lastFrameMs_ = 0;
     ULONGLONG lastThemePollMs_ = 0;
     bool currentLight_ = true;
+    float lastAccentR_ = -1.0f;
+    float lastAccentG_ = -1.0f;
+    float lastAccentB_ = -1.0f;
 
     Theme theme_;
 };
