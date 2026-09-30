@@ -16,11 +16,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Diagnose toolchain
+        shell: pwsh
+        run: |
+          Write-Host "=== cmake ==="
+          cmake --version
+          Write-Host "=== vswhere ==="
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vswhere) {
+            & $vswhere -latest -products * -property installationPath
+            & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property displayName
+          } else {
+            Write-Host "vswhere NOT FOUND at $vswhere"
+          }
+          Write-Host "=== VS install dirs ==="
+          Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host "=== Generators ==="
+          cmake --help | Select-String -Pattern "Visual Studio"
+
       - name: Configure (Release|x64)
         run: >
           cmake -S . -B build
           -G "Visual Studio 17 2022"
           -A x64
+          -T host=x64
 
       - name: Build
         run: cmake --build build --config Release --parallel
