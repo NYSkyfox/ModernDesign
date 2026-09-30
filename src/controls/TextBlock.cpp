@@ -16,6 +16,7 @@ void TextBlock::Draw(Renderer& renderer, const Theme& theme, float scale) const 
     case Align::Left:   hAlign = DWRITE_TEXT_ALIGNMENT_LEADING; break;
     case Align::Center: hAlign = DWRITE_TEXT_ALIGNMENT_CENTER; break;
     case Align::Right:  hAlign = DWRITE_TEXT_ALIGNMENT_TRAILING; break;
+    default:            hAlign = DWRITE_TEXT_ALIGNMENT_LEADING; break;
     }
 
     // 垂直：单行默认居中；多行顶部

@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Geometry.h"
+#include <functional>
 #include <string>
 
 namespace ModernDesign {
+
+class Renderer;
+class Theme;
 
 // ============================================================
 // Card — 卡片

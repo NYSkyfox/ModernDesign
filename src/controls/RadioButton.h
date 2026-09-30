@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Geometry.h"
+#include <functional>
 #include <string>
 
 namespace ModernDesign {
+
+class Renderer;
+class Theme;
 
 // ============================================================
 // RadioButton — 单选按钮

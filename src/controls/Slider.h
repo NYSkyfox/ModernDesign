@@ -2,8 +2,12 @@
 
 #include "Geometry.h"
 #include <functional>
+#include <string>
 
 namespace ModernDesign {
+
+class Renderer;
+class Theme;
 
 // ============================================================
 // Slider — 滑块

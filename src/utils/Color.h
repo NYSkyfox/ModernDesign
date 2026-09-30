@@ -8,6 +8,33 @@
 namespace ModernDesign {
 
 // ============================================================
+// 常量
+// ============================================================
+constexpr float kPi = 3.14159265358979323846f;
+
+// ============================================================
+// 便捷数学函数（前置定义，供 Color / 其它模块使用）
+// ============================================================
+inline float Clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
+inline float ClampF(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
+inline float LerpF(float a, float b, float t) { return a + (b - a) * t; }
+inline float FzMx(float a, float b) { return a > b ? a : b; }
+inline float FzMn(float a, float b) { return a < b ? a : b; }
+
+// 缓动（缓出三次方，最常用）
+inline float EaseOut(float t) {
+    t = Clamp01(t);
+    float u = 1.0f - t;
+    return 1.0f - u * u * u;
+}
+
+// 帧率无关的指数趋近（用于 hover/press 平滑过渡）
+inline float Approach(float current, float target, float dt, float speed) {
+    float t = Clamp01(dt * speed);
+    return current + (target - current) * t;
+}
+
+// ============================================================
 // Color — 颜色类型
 // 分量全部为 0.0f ~ 1.0f 浮点（与 D2D1_COLOR_F 一致，免转换）
 // ============================================================
@@ -73,32 +100,5 @@ struct Color {
         return 0.2126f * lin(r) + 0.7152f * lin(g) + 0.0722f * lin(b);
     }
 };
-
-// ============================================================
-// 常量
-// ============================================================
-constexpr float kPi = 3.14159265358979323846f;
-
-// ============================================================
-// 便捷函数
-// ============================================================
-inline float Clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
-inline float ClampF(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
-inline float LerpF(float a, float b, float t) { return a + (b - a) * t; }
-inline float FzMx(float a, float b) { return a > b ? a : b; }
-inline float FzMn(float a, float b) { return a < b ? a : b; }
-
-// 缓动（缓出三次方，最常用）
-inline float EaseOut(float t) {
-    t = Clamp01(t);
-    float u = 1.0f - t;
-    return 1.0f - u * u * u;
-}
-
-// 帧率无关的指数趋近（用于 hover/press 平滑过渡）
-inline float Approach(float current, float target, float dt, float speed) {
-    float t = Clamp01(dt * speed);
-    return current + (target - current) * t;
-}
 
 } // namespace ModernDesign

@@ -26,6 +26,7 @@ static int CountLines(const std::wstring& s) {
 }
 
 float Card::MeasureHeight(const Theme& theme, float scale) const {
+    (void)theme;   // 目前仅依赖字号常量
     float s = scale;
     float h = kCardPadTop * s + kCardPadBottom * s;
 
