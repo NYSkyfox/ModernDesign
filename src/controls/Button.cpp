@@ -13,6 +13,7 @@ constexpr float kBtnHeight = 32.0f;
 constexpr float kBtnFontSize = 14.0f;
 
 Button::Button() = default;
+Button::~Button() = default;
 
 void Button::SetText(const std::wstring& text) { text_ = text; }
 

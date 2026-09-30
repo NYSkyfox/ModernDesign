@@ -18,7 +18,7 @@ target_link_libraries(DemoAppDemo PRIVATE
     d2d1 dwrite dwmapi dxgi dxguid d3d11 windowscodecs uxtheme shcore user32 gdi32 shell32 ole32 uuid
 )
 
-# Windows GUI 应用
+# Windows GUI 应用（用 wWinMain，而非控制台 main）
 set_target_properties(DemoAppDemo PROPERTIES
-    WINDOWS_EXECUTABLE ON
+    WIN32_EXECUTABLE ON
 )
