@@ -239,8 +239,19 @@ HRESULT App::CreateMainWindow(HINSTANCE hInstance, int nCmdShow) {
     int ww = wr.right - wr.left;
     int wh = wr.bottom - wr.top;
 
+    // WS_EX_NOREDIRECTIONBITMAP：把 D2D backbuffer 直接交给 DWM 合成（Acrylic 用）。
+    // 但 GDI 截图（PrintWindow / CopyFromScreen）抓不到这类窗口的客户区内容。
+    // 设置环境变量 MODERNDESIGN_NO_NORedirection=1 可关闭它，
+    // 让 D2D 走 GDI 重定向路径，便于 CI 截图。CI 是 WARP（无 GPU、无 blur），无损失。
+    DWORD ex = 0;
+    wchar_t nv[16] = {};
+    if (GetEnvironmentVariableW(L"MODERNDESIGN_NO_NOREDIRECT", nv, 16) > 0 &&
+        _wcsicmp(nv, L"1") != 0 && _wcsicmp(nv, L"true") != 0) {
+        ex = WS_EX_NOREDIRECTIONBITMAP;
+    }
+
     hwnd_ = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP,
+        ex,
         kWindowClassName,
         L"Modern Design",
         WS_OVERLAPPEDWINDOW,

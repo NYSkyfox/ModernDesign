@@ -28,6 +28,10 @@ if (-not $exe) {
 if (-not $exe) { throw "exe not found under build/" }
 Write-Host "exe: $exe"
 
+# 关闭 WS_EX_NOREDIRECTIONBITMAP，让 D2D 走 GDI 重定向路径 → 截图可捕获客户区
+# （CI 是 WARP 无 GPU，Acrylic blur 本就不生效，关闭无损失）
+$env:MODERNDESIGN_NO_NOREDIRECT = "1"
+
 $proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
 
 # ---- 内嵌 C#：仅 user32 P/Invoke（不依赖 System.Drawing）----
