@@ -76,7 +76,7 @@ private:
     LRESULT HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l);
 
     bool RegisterWindowClass(HINSTANCE hInstance);
-    HRESULT CreateWindowEx(HINSTANCE hInstance, int nCmdShow);
+    HRESULT CreateMainWindow(HINSTANCE hInstance, int nCmdShow);
     void UpdateClientSize();
     void UpdateDpiScale();
 

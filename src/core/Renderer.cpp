@@ -241,10 +241,10 @@ void Renderer::DrawText(const std::wstring& text,
     D2D1_RECT_F layout = D2D1::RectF(x, y, x + maxW, y + maxH);
 
     rt_->DrawText(text.c_str(),
-                  static_cast<UINT32>(text.size()),
-                  fmt,
-                  layout,
-                  b,
+                   static_cast<UINT32>(text.size()),
+                   fmt,
+                   &layout,
+                   b,
                    D2D1_DRAW_TEXT_OPTIONS_CLIP,
                    0);   // measureMode（DEFAULT），用字面量避免依赖枚举常量名
 }

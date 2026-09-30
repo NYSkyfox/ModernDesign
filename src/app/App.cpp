@@ -93,7 +93,7 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
     }
 
     // 5. 创建窗口
-    hr = CreateWindowEx(hInstance, nCmdShow);
+    hr = CreateMainWindow(hInstance, nCmdShow);
     if (FAILED(hr)) return hr;
 
     // 6. 初始化渲染
@@ -233,7 +233,7 @@ bool App::RegisterWindowClass(HINSTANCE hInstance) {
     return true;
 }
 
-HRESULT App::CreateWindowEx(HINSTANCE hInstance, int nCmdShow) {
+HRESULT App::CreateMainWindow(HINSTANCE hInstance, int nCmdShow) {
     RECT wr = {0, 0, 1200, 760};
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
     int ww = wr.right - wr.left;
