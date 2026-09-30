@@ -1,0 +1,30 @@
+# 构建输出
+build/
+out/
+bin/
+obj/
+*.ilk
+*.pdb
+*.exp
+*.lib
+*.o
+*.a
+
+# VS
+.vs/
+*.user
+*.suo
+*.swp
+
+# IDE
+*.code-workspace
+.idea/
+
+# 临时文件
+*.tmp
+*.bak
+*.orig
+
+# 日志
+fz_debug.txt
+fz_crash.txt
