@@ -246,7 +246,7 @@ void Renderer::DrawText(const std::wstring& text,
                   layout,
                   b,
                    D2D1_DRAW_TEXT_OPTIONS_CLIP,
-                   static_cast<DWRITE_MEASURE_MODE>(0));   // DEFAULT（0），避免依赖具体常量名
+                   0);   // measureMode（DEFAULT），用字面量避免依赖枚举常量名
 }
 
 void Renderer::DrawTextCentered(const std::wstring& text, const RectF& box,

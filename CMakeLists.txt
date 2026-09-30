@@ -34,9 +34,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CompilerWarnings)
 setup_global_warnings()
 
-include(FindDirect2D)
-include(FindDirectWrite)
-include(FindWIC)
+# 注：d2d1 / dwrite / windowscodecs 等均由 target_link_libraries 直接传库名，
+# 由 MSVC 从 Windows SDK 自行定位，无需自定义 Find 模块。
 
 # ============================================================
 # 核心框架库（静态库，供 DemoApp 复用）
