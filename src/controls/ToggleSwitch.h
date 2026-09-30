@@ -48,8 +48,10 @@ private:
     std::function<void(bool)> onChanged_;
 
     bool hot_ = false;
+    bool pressed_ = false;
     float toggleT_ = 0.0f;
     float hoverT_ = 0.0f;
+    float pressedT_ = 0.0f;
 };
 
 } // namespace ModernDesign
