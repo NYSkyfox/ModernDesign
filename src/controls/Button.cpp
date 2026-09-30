@@ -1,4 +1,6 @@
 #include "pch.h"
+#include "core/Renderer.h"
+#include "core/Theme.h"
 #include "controls/Button.h"
 
 namespace ModernDesign {

@@ -196,13 +196,21 @@ void Renderer::StrokeRoundedRect(const RectF& r, float radius,
 void Renderer::FillEllipse(const RectF& r, const Color& c) {
     if (!rt_) return;
     ID2D1SolidColorBrush* b = GetBrush(c);
-    if (b) rt_->FillEllipse(r.ToD2D(), b);
+    if (!b) return;
+    D2D1_ELLIPSE e = D2D1::Ellipse(
+        D2D1::Point2F(r.x + r.w * 0.5f, r.y + r.h * 0.5f),
+        r.w * 0.5f, r.h * 0.5f);
+    rt_->FillEllipse(e, b);
 }
 
 void Renderer::StrokeEllipse(const RectF& r, float strokeWidth, const Color& c) {
     if (!rt_) return;
     ID2D1SolidColorBrush* b = GetBrush(c);
-    if (b) rt_->DrawEllipse(r.ToD2D(), b, strokeWidth);
+    if (!b) return;
+    D2D1_ELLIPSE e = D2D1::Ellipse(
+        D2D1::Point2F(r.x + r.w * 0.5f, r.y + r.h * 0.5f),
+        r.w * 0.5f, r.h * 0.5f);
+    rt_->DrawEllipse(e, b, strokeWidth);
 }
 
 void Renderer::DrawLine(float x1, float y1, float x2, float y2,
@@ -237,8 +245,8 @@ void Renderer::DrawText(const std::wstring& text,
                   fmt,
                   layout,
                   b,
-                  D2D1_DRAW_TEXT_OPTIONS_CLIP,
-                  D2D1_MEASURE_MODE_NATURAL);
+                   D2D1_DRAW_TEXT_OPTIONS_CLIP,
+                   DWRITE_MEASURE_MODE_NATURAL);
 }
 
 void Renderer::DrawTextCentered(const std::wstring& text, const RectF& box,

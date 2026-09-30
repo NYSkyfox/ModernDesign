@@ -218,7 +218,7 @@ bool App::RegisterWindowClass(HINSTANCE hInstance) {
     wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc = &App::WndProcThunk;
     wc.hInstance = hInstance;
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW));
     wc.hbrBackground = nullptr;   // 全部自绘
     wc.lpszClassName = kWindowClassName;
 

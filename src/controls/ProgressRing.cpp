@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "controls/ProgressRing.h"
 #include "core/Renderer.h"
 #include "core/Theme.h"
+#include "controls/ProgressRing.h"
 #include <cmath>
 
 namespace ModernDesign {
