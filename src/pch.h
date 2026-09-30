@@ -6,6 +6,16 @@
 // 依赖：仅 Windows 自带 DLL（d2d1 / dwrite / dwmapi / dxgi / d3d11 / windowscodecs）
 // ============================================================
 
+// ---- 强制 Unicode（宽字符 API）----
+// 必须在所有 Win32 头之前定义，否则 Win32 API 默认走 ANSI，
+// 导致 DrawText / CreateWindowEx 等映射到 *A 版本，与 wchar_t* 不匹配。
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
