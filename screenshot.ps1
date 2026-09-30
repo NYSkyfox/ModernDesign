@@ -1,8 +1,11 @@
-# ModernDesign CI 截图脚本（基于 FluentZero v4 方案，全屏截图）
+# ModernDesign CI 截图脚本
 # 关键点：
-#   - 用 EnumWindows 按类名 "ModernDesignAppWindow" 找窗口（最可靠）
-#   - Runner 上 DWM 不真模糊（无 GPU，走 WARP），窗口后方是桌面
-#   - 全屏截图：截取整个虚拟桌面，便于看清窗口在桌面的位置与内容
+#   - D2D + WS_EX_NOREDIRECTIONBITMAP 窗口的内容不经过 GDI，
+#     用 CopyFromScreen / BitBlt 抓不到 → 会露出桌面。
+#   - 改用 PrintWindow(hwnd, dc, PW_RENDERFULLCONTENT=2)：
+#     官方专为 D2D/D3D/DirectComposition 窗口设计的抓取方式，
+#     强制窗口把当前帧重绘到目标 DC。
+#   - 用 EnumWindows 按类名 "ModernDesignAppWindow" 找窗口（最可靠）。
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
@@ -19,7 +22,6 @@ foreach ($c in $candidates) {
     if (Test-Path $p) { $exe = $p; break }
 }
 if (-not $exe) {
-    # 兜底：递归找任意 DemoAppDemo.exe
     $found = Get-ChildItem -Path build -Recurse -Filter "DemoAppDemo.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($found) { $exe = $found.FullName }
 }
@@ -32,9 +34,12 @@ Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Drawing;
+using System.Drawing.Imaging;
 public class MdW {
     public static IntPtr found = IntPtr.Zero;
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int l, t, r, b; }
+
     [DllImport("user32.dll", EntryPoint="GetClassNameW", CharSet=CharSet.Unicode)]
     public static extern int GetClassName(IntPtr h, StringBuilder s, int max);
     [DllImport("user32.dll", EntryPoint="GetWindowTextW", CharSet=CharSet.Unicode)]
@@ -42,9 +47,17 @@ public class MdW {
     public delegate bool EnumCB(IntPtr h, IntPtr l);
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumCB cb, IntPtr l);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    // PW_RENDERFULLCONTENT：抓取 D2D/D3D/DirectComposition 内容
+    public const uint PW_RENDERFULLCONTENT = 2;
+    [DllImport("user32.dll")]
+    public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
+
     public static IntPtr FindByClass(string cls) {
         found = IntPtr.Zero;
         EnumWindows((h, l) => {
@@ -55,7 +68,7 @@ public class MdW {
         }, IntPtr.Zero);
         return found;
     }
-    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+
     public static void MinimizeExcept(string keepCls) {
         int minimized = 0;
         EnumWindows((h, l) => {
@@ -72,6 +85,7 @@ public class MdW {
         }, IntPtr.Zero);
         Console.WriteLine("    MinimizeExcept(" + keepCls + "): " + minimized + " minimized");
     }
+
     public static void Dump() {
         EnumWindows((h, l) => {
             if (IsWindowVisible(h)) {
@@ -81,6 +95,30 @@ public class MdW {
             }
             return true;
         }, IntPtr.Zero);
+    }
+
+    // 用 PrintWindow 抓取窗口客户区内容，保存到 png
+    public static bool CaptureToPng(IntPtr hwnd, string path, out int w, out int h) {
+        w = 0; h = 0;
+        RECT r;
+        if (!GetWindowRect(hwnd, out r)) return false;
+        int cw = r.r - r.l;
+        int ch = r.b - r.t;
+        if (cw <= 0 || ch <= 0) return false;
+        w = cw; h = ch;
+
+        using (var bmp = new Bitmap(cw, ch, PixelFormat.Format32bppArgb)) {
+            using (Graphics g = Graphics.FromImage(bmp)) {
+                IntPtr hdc = g.GetHdc();
+                bool ok = PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT);
+                g.ReleaseHdc(hdc);
+                if (!ok) return false;
+            }
+            // 简单检测：整张图是否纯色（抓不到内容时通常是纯黑/纯色）
+            // 若不是纯色再保存；这里一律保存，便于诊断
+            bmp.Save(path, ImageFormat.Png);
+        }
+        return true;
     }
 }
 "@
@@ -98,6 +136,32 @@ $shotPath = Join-Path $PWD "screenshot.png"
 
 if ($hwnd -eq [IntPtr]::Zero) {
     Write-Host "!!! 主窗口未出现 —— 打印诊断:"
+    [MdW]::Dump()
+    Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+    throw "ModernDesign 主窗口未创建（可能崩溃或未显示）"
+}
+Write-Host "找到窗口 handle=$hwnd"
+
+# 1) 最小化其它顶层窗口（让窗口独占前台，便于稳定渲染）
+[MdW]::MinimizeExcept($wndCls)
+Start-Sleep -Milliseconds 600
+# 2) 最大化并置前，给足渲染时间
+[MdW]::ShowWindow($hwnd, 3) | Out-Null       # SW_MAXIMIZE = 3
+[MdW]::SetForegroundWindow($hwnd) | Out-Null
+Start-Sleep -Milliseconds 1500                # 等最大化重绘 + DWM 稳定
+
+$rect = New-Object MdW+RECT
+[MdW]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+$w = $rect.r - $rect.l; $h = $rect.b - $rect.t
+Write-Host "窗口矩形: ($($rect.l),$($rect.t)) ${w}x${h}"
+
+# 用 PrintWindow(PW_RENDERFULLCONTENT) 抓取窗口内容
+$ok = [MdW]::CaptureToPng($hwnd, $shotPath, [ref]$cw, [ref]$ch)
+if ($ok) {
+    Write-Host ("已保存窗口截图(PrintWindow): {0}  {1}x{2}  ({3} KB)" -f $shotPath, $cw, $ch, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
+} else {
+    # PrintWindow 失败 → 回退到全屏 CopyFromScreen（至少留一张诊断图）
+    Write-Host "PrintWindow 失败，回退到全屏截图"
     $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
     $bmp = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -105,43 +169,6 @@ if ($hwnd -eq [IntPtr]::Zero) {
     $g.Dispose()
     $bmp.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
-    [MdW]::Dump()
-    Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-    throw "ModernDesign 主窗口未创建（可能崩溃或未显示）"
 }
-
-Write-Host "找到窗口 handle=$hwnd"
-# 1) 最小化除 ModernDesign 外的所有顶层窗口
-[MdW]::MinimizeExcept($wndCls)
-Start-Sleep -Milliseconds 600
-# 2) 最大化 ModernDesign（铺满屏幕：内容区更大）
-[MdW]::ShowWindow($hwnd, 3) | Out-Null       # SW_MAXIMIZE = 3
-[MdW]::SetForegroundWindow($hwnd) | Out-Null
-Start-Sleep -Milliseconds 1200                # 等最大化重绘 + DWM 稳定
-
-$rect = New-Object MdW+RECT
-[MdW]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
-$w = $rect.r - $rect.l; $h = $rect.b - $rect.t
-Write-Host "窗口矩形: ($($rect.l),$($rect.t)) ${w}x${h}"
-
-# 全屏截图：截取整个虚拟桌面
-$screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-$sw = $screen.Width; $sh = $screen.Height
-Write-Host "虚拟屏幕: ($($screen.X),$($screen.Y)) ${sw}x${sh}"
-if ($sw -lt 20 -or $sh -lt 20) {
-    $sw = $w; $sh = $h
-    $bmp = New-Object System.Drawing.Bitmap($sw, $sh)
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.CopyFromScreen($rect.l, $rect.t, 0, 0, (New-Object System.Drawing.Size($sw, $sh)))
-    $g.Dispose()
-} else {
-    $bmp = New-Object System.Drawing.Bitmap($sw, $sh)
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.CopyFromScreen($screen.X, $screen.Y, 0, 0, (New-Object System.Drawing.Size($sw, $sh)))
-    $g.Dispose()
-}
-$bmp.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-$bmp.Dispose()
-Write-Host ("已保存全屏截图: {0} ({1} KB)" -f $shotPath, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
 
 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
