@@ -34,6 +34,11 @@ void Slider::OnMouseUp(float x, float y) {
     dragging_ = false;
 }
 
+void Slider::OnMouseLeave() {
+    hot_ = false;
+    dragging_ = false;
+}
+
 bool Slider::Update(float dt) {
     float target = (hot_ || dragging_) ? 1.0f : 0.0f;
     hoverT_ = Approach(hoverT_, target, dt, 18.0f);

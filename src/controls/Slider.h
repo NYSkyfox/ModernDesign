@@ -32,6 +32,7 @@ public:
     void OnMouseMove(float x, float y);
     void OnMouseDown(float x, float y);
     void OnMouseUp(float x, float y);
+    void OnMouseLeave();
 
     // 动画
     bool Update(float dt);
