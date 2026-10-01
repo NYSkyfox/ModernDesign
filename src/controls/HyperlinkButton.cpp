@@ -97,7 +97,7 @@ void HyperlinkButton::Draw(Renderer& renderer, const Theme& theme, float scale) 
         renderer.DrawText(text_, textRect.x, textRect.y, textRect.w, textRect.h,
                           kFace, fs, DWRITE_FONT_WEIGHT_NORMAL,
                           fg.WithAlpha(reveal),
-                          DWRITE_TEXT_ALIGNMENT_NEAR,
+                          DWRITE_TEXT_ALIGNMENT_LEADING,
                           DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
     }
 }
