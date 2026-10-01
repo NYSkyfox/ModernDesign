@@ -4,7 +4,7 @@
 //   左侧：NavigationView 侧边栏（hamburger 折叠 + 菜单项 + accent 指示条）
 //   右侧：根据选中项切换页面
 //       Home     — 基础控件合集
-//       Expander — 可折叠容器示例
+//       Expander — 可折叠容器（HeaderIcon / Description / HeaderControls / Up 方向）
 //       Settings — 设置项示例
 //
 //   鼠标：悬停 / 点击 / 拖拽    键盘：Space 切换深浅主题
@@ -54,23 +54,11 @@ protected:
             nav_.AddItem({ L"Home", 0, false });
             nav_.AddItem({ L"Expander", 1, false });
             nav_.SetSettings(L"Settings");
-            nav_.SetSelectedIndex(0);   // 默认 Home 页
+            nav_.SetSelectedIndex(1);   // [临时] 默认停 Expander 页，便于 CI 截图验证
+            current_ = 1;               // [临时]
             nav_.SetSelectionCallback([this](int i) { current_ = i; Invalidate(); });
 
-            // Expander 页面：内容区放一个 ToggleSwitch
-            expander_.SetHeader(L"Feature");
-            expander_.SetDescription(L"Collapsible container demo");
-            expander_.SetIsExpanded(true);
-            expander_.SetContentHeight(64.0f); // DIP 自然高（含 padding）
-            expander_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF& inner) {
-                expanderToggle_.Draw(r, t, sc);
-            });
-            expander_.SetContentUpdateFn([this](float dt) { return expanderToggle_.Update(dt); });
-            expander_.SetContentInputFn(
-                [this](float x, float y) { expanderToggle_.OnMouseDown(x, y); },
-                [this](float x, float y) { expanderToggle_.OnMouseUp(x, y); },
-                [this](float x, float y) { expanderToggle_.OnMouseMove(x, y); },
-                [this](float x, float y) { expanderToggle_.OnMouseLeave(); });
+            BindExpanderPage();
         }
 
         // ---- Home 页布局 ----
@@ -113,11 +101,39 @@ protected:
         {
             float x = ContX(), y = kMargin * s + 70.0f * s;
             float w = FzMn(ContW(), 460.0f * s);
-            expander_.SetBounds(RectF(x, y, w, (expander_.HeaderHeight() + expander_.ContentHeight()) * s));
             float pad = 16.0f * s;
-            expanderToggle_.SetText(L"Enable feature");
-            expanderToggle_.SetIsOn(true);
-            expanderToggle_.SetBounds(RectF(x + pad, y + 48.0f * s + pad, FzMn(ContW(), 220.0f) * s, kRowHeight * s));
+            float rowW = FzMn(w - 2.0f * pad, 240.0f * s);
+            float mb = Expander::kMarginBottom * s;
+
+            // A：HeaderIcon + Description + Content
+            {
+                float h = (expanderA_.HeaderHeight() + expanderA_.ContentHeight()) * s;
+                expanderA_.SetScale(s);
+                expanderA_.SetBounds(RectF(x, y, w, h));
+                expAToggle_.SetBounds(RectF(x + pad, y + expanderA_.HeaderHeight() * s + pad,
+                                            rowW, kRowHeight * s));
+                y += h + mb;
+            }
+            // B：HeaderControls（Header 右侧放一个 Button）
+            {
+                float h = (expanderB_.HeaderHeight() + expanderB_.ContentHeight()) * s;
+                expanderB_.SetScale(s);
+                expanderB_.SetBounds(RectF(x, y, w, h));
+                RectF cb = expanderB_.HeaderControlsBox(s);
+                expHeaderBtn_.SetBounds(RectF(cb.x, cb.y + (cb.h - 32.0f * s) * 0.5f,
+                                              cb.w, 32.0f * s));
+                expBToggle_.SetBounds(RectF(x + pad, y + expanderB_.HeaderHeight() * s + pad,
+                                            rowW, kRowHeight * s));
+                y += h + mb;
+            }
+            // C：ExpandDirection = Up（内容在 Header 上方）
+            {
+                float h = (expanderC_.HeaderHeight() + expanderC_.ContentHeight()) * s;
+                expanderC_.SetScale(s);
+                expanderC_.SetBounds(RectF(x, y, w, h));
+                expCToggle_.SetBounds(RectF(x + pad, y + pad, rowW, kRowHeight * s));
+                y += h + mb;
+            }
         }
 
         // ---- Settings 页布局 ----
@@ -137,6 +153,80 @@ protected:
         }
     }
 
+    // Expander 页面：三个示例，覆盖全部能力
+    void BindExpanderPage() {
+        // ---------- A：HeaderIcon + Description + Content ----------
+        expanderA_.SetHeader(L"Feature");
+        expanderA_.SetDescription(L"Collapsible container demo");
+        expanderA_.SetIsExpanded(true);
+        expanderA_.SetContentHeight(64.0f);   // DIP（含 padding）
+        expanderA_.SetHeaderIcon([](Renderer& r, const Theme& th, float sc, const RectF& box) {
+            // 20×20 信息图标（圆 + i），矢量绘制（无 Fluent Icon 字体依赖）
+            float cx = box.CenterX(), cy = box.CenterY();
+            float d = box.w;
+            Color col = th.TextSecondary();
+            r.StrokeEllipse(RectF(cx - d * 0.5f, cy - d * 0.5f, d, d), 1.2f * sc, col);
+            float dot = 1.8f * sc;
+            r.FillEllipse(RectF(cx - dot * 0.5f, cy - 4.2f * sc, dot, dot), col);
+            r.DrawLine(cx, cy - 1.4f * sc, cx, cy + 4.0f * sc, 1.4f * sc, col);
+        });
+        expanderA_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF&) {
+            expAToggle_.Draw(r, t, sc);
+        });
+        expanderA_.SetContentUpdateFn([this](float dt) { return expAToggle_.Update(dt); });
+        expanderA_.SetContentInputFn(
+            [this](float px, float py) { expAToggle_.OnMouseDown(px, py); },
+            [this](float px, float py) { expAToggle_.OnMouseUp(px, py); },
+            [this](float px, float py) { expAToggle_.OnMouseMove(px, py); },
+            [this](float, float)       { expAToggle_.OnMouseLeave(); });
+        expAToggle_.SetText(L"Enable feature");
+        expAToggle_.SetIsOn(true);
+
+        // ---------- B：HeaderControls ----------
+        expanderB_.SetHeader(L"Notifications");
+        expanderB_.SetIsExpanded(true);
+        expanderB_.SetContentHeight(64.0f);
+        expanderB_.SetHeaderControls(88.0f, [this](Renderer& r, const Theme& t, float sc, const RectF&) {
+            expHeaderBtn_.Draw(r, t, sc);
+        });
+        expanderB_.SetHeaderControlsInputFn(
+            [this](float px, float py) { expHeaderBtn_.OnMouseDown(px, py); },
+            [this](float px, float py) { expHeaderBtn_.OnMouseUp(px, py); },
+            [this](float px, float py) { expHeaderBtn_.OnMouseMove(px, py); },
+            [this](float, float)       { expHeaderBtn_.OnMouseLeave(); });
+        expHeaderBtn_.SetText(L"Reset");
+        expHeaderBtn_.SetVariant(ButtonVariant::Standard);
+        expanderB_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF&) {
+            expBToggle_.Draw(r, t, sc);
+        });
+        expanderB_.SetContentUpdateFn([this](float dt) { return expBToggle_.Update(dt); });
+        expanderB_.SetContentInputFn(
+            [this](float px, float py) { expBToggle_.OnMouseDown(px, py); },
+            [this](float px, float py) { expBToggle_.OnMouseUp(px, py); },
+            [this](float px, float py) { expBToggle_.OnMouseMove(px, py); },
+            [this](float, float)       { expBToggle_.OnMouseLeave(); });
+        expBToggle_.SetText(L"Enable notifications");
+        expBToggle_.SetIsOn(true);
+
+        // ---------- C：ExpandDirection = Up ----------
+        expanderC_.SetDirection(Expander::Direction::Up);
+        expanderC_.SetHeader(L"Advanced");
+        expanderC_.SetDescription(L"ExpandDirection = Up");
+        expanderC_.SetIsExpanded(true);
+        expanderC_.SetContentHeight(64.0f);
+        expanderC_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF&) {
+            expCToggle_.Draw(r, t, sc);
+        });
+        expanderC_.SetContentUpdateFn([this](float dt) { return expCToggle_.Update(dt); });
+        expanderC_.SetContentInputFn(
+            [this](float px, float py) { expCToggle_.OnMouseDown(px, py); },
+            [this](float px, float py) { expCToggle_.OnMouseUp(px, py); },
+            [this](float px, float py) { expCToggle_.OnMouseMove(px, py); },
+            [this](float, float)       { expCToggle_.OnMouseLeave(); });
+        expCToggle_.SetText(L"Advanced mode");
+        expCToggle_.SetIsOn(false);
+    }
+
     void DrawPageHeader(const std::wstring& title, float s) {
         DrawText(title, ContX(), kMargin * s + 24.0f * s, ContW(), 44.0f * s,
                  L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
@@ -151,8 +241,9 @@ protected:
         anim |= homeChk_.Update(dt); anim |= homeTog_.Update(dt);
         anim |= homeRadioA_.Update(dt); anim |= homeRadioB_.Update(dt);
         anim |= homeSlider_.Update(dt);
-        anim |= expander_.Update(dt);
-        anim |= expanderToggle_.Update(dt);
+        anim |= expanderA_.Update(dt); anim |= expanderB_.Update(dt); anim |= expanderC_.Update(dt);
+        anim |= expAToggle_.Update(dt); anim |= expBToggle_.Update(dt); anim |= expCToggle_.Update(dt);
+        anim |= expHeaderBtn_.Update(dt);
         anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt);
         return anim;
     }
@@ -170,7 +261,9 @@ protected:
             homeSlider_.Draw(*this, theme, s); homeProg_.Draw(*this, theme, s);
         } else if (current_ == 1) {
             DrawPageHeader(L"Expander", s);
-            expander_.Draw(*this, theme, s);
+            expanderA_.Draw(*this, theme, s);
+            expanderB_.Draw(*this, theme, s);
+            expanderC_.Draw(*this, theme, s);
         } else {
             DrawPageHeader(L"Settings", s);
             setTogA_.Draw(*this, theme, s); setTogB_.Draw(*this, theme, s);
@@ -185,7 +278,7 @@ protected:
             homeRadioA_.OnMouseMove(x, y); homeRadioB_.OnMouseMove(x, y);
             homeSlider_.OnMouseMove(x, y);
         } else if (current_ == 1) {
-            expander_.OnMouseMove(x, y);
+            expanderA_.OnMouseMove(x, y); expanderB_.OnMouseMove(x, y); expanderC_.OnMouseMove(x, y);
         } else {
             setTogA_.OnMouseMove(x, y); setTogB_.OnMouseMove(x, y);
         }
@@ -198,7 +291,7 @@ protected:
             homeRadioA_.OnMouseLeave(); homeRadioB_.OnMouseLeave();
             homeSlider_.OnMouseLeave();
         } else if (current_ == 1) {
-            expander_.OnMouseLeave();
+            expanderA_.OnMouseLeave(); expanderB_.OnMouseLeave(); expanderC_.OnMouseLeave();
         } else {
             setTogA_.OnMouseLeave(); setTogB_.OnMouseLeave();
         }
@@ -211,7 +304,7 @@ protected:
             homeRadioA_.OnMouseDown(x, y); homeRadioB_.OnMouseDown(x, y);
             homeSlider_.OnMouseDown(x, y);
         } else if (current_ == 1) {
-            expander_.OnMouseDown(x, y);
+            expanderA_.OnMouseDown(x, y); expanderB_.OnMouseDown(x, y); expanderC_.OnMouseDown(x, y);
         } else {
             setTogA_.OnMouseDown(x, y); setTogB_.OnMouseDown(x, y);
         }
@@ -224,7 +317,7 @@ protected:
             homeRadioA_.OnMouseUp(x, y); homeRadioB_.OnMouseUp(x, y);
             homeSlider_.OnMouseUp(x, y);
         } else if (current_ == 1) {
-            expander_.OnMouseUp(x, y);
+            expanderA_.OnMouseUp(x, y); expanderB_.OnMouseUp(x, y); expanderC_.OnMouseUp(x, y);
         } else {
             setTogA_.OnMouseUp(x, y); setTogB_.OnMouseUp(x, y);
         }
@@ -248,9 +341,10 @@ private:
     Slider homeSlider_;
     ProgressBar homeProg_;
 
-    // Expander
-    Expander expander_;
-    ToggleSwitch expanderToggle_;
+    // Expander（三种示例：图标+描述 / HeaderControls / Up 方向）
+    Expander expanderA_, expanderB_, expanderC_;
+    ToggleSwitch expAToggle_, expBToggle_, expCToggle_;
+    Button expHeaderBtn_;
 
     // Settings
     ToggleSwitch setTogA_, setTogB_;
