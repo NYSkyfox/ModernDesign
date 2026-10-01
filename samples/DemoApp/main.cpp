@@ -38,8 +38,13 @@ class DemoWindow : public App {
 protected:
     // 内容区几何：完全跟随 NavigationView（Left 折叠时内容区会平滑跟随位移）
     RectF Cont() const { return nav_.ContentRect(); }
-    float ContX() const { return Cont().x + kMargin * DpiScale(); }
-    float ContW() const { return FzMx(0.0f, Cont().w - kMargin * DpiScale() * 2); }
+    // LeftMinimal：无占位、汉堡浮在左上角 → 页面按惯例让出 44px（NavigationViewMinimalHeaderMargin）
+    float ContPadL() const {
+        bool minimal = nav_.GetDisplayMode() == NavigationView::DisplayMode::LeftMinimal;
+        return (minimal ? 44.0f : kMargin) * DpiScale();
+    }
+    float ContX() const { return Cont().x + ContPadL(); }
+    float ContW() const { return FzMx(0.0f, Cont().w - ContPadL() - kMargin * DpiScale()); }
     // 页面标题 / 分隔线 / 内容起始 y
     float HeadY() const { return Cont().y + 24.0f * DpiScale(); }
     float RuleY() const { return Cont().y + 66.0f * DpiScale(); }

@@ -189,7 +189,8 @@ void NavigationView::SetDisplayMode(DisplayMode m) {
     }
     compact_ = (m == DisplayMode::LeftCompact);
     paneFrom_ = paneT_;
-    paneOpen_ = !compact_;
+    // 只有 Left 模式默认展开；LeftCompact/LeftMinimal 都从「收起」开始
+    paneOpen_ = (m == DisplayMode::Left);
     StartPaneAnim(paneOpen_);
 }
 
