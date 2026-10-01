@@ -3,84 +3,12 @@
 #include "core/Theme.h"
 #include "controls/NavigationView.h"
 #include "utils/Easing.h"
+#include "utils/FluentIcons.h"
 
 namespace ModernDesign {
 
-namespace {
-
-// 在 16x16 盒 (x,y) 内绘制矢量图标（无 Segoe Fluent Icons 字体保证，故手绘）
-void DrawIcon(Renderer& r, int kind, float x, float y, float s, const Color& c) {
-    float sz = 16.0f * s;
-    float cx = x + sz * 0.5f, cy = y + sz * 0.5f;
-    switch (kind) {
-    case 0: { // home
-        float w = 13.0f * s, h = 12.0f * s;
-        float L = x + (sz - w) * 0.5f, T = y + (sz - h) * 0.5f;
-        r.DrawLine(L, T + h * 0.4f, cx, T, 1.4f * s, c);
-        r.DrawLine(cx, T, L + w, T + h * 0.4f, 1.4f * s, c);
-        float bw = 9.0f * s, bt = T + h * 0.35f, bh = h * 0.65f;
-        float bl = cx - bw * 0.5f;
-        r.DrawLine(bl, bt, bl, bt + bh, 1.4f * s, c);
-        r.DrawLine(bl + bw, bt, bl + bw, bt + bh, 1.4f * s, c);
-        r.DrawLine(bl, bt + bh, bl + bw, bt + bh, 1.4f * s, c);
-        break;
-    }
-    case 1: { // grid（4 方块）
-        float g = 13.0f * s, cell = g * 0.42f, gap = g * 0.16f;
-        float L = x + (sz - g) * 0.5f, T = y + (sz - g) * 0.5f;
-        float w = 1.3f * s;
-        for (int i = 0; i < 2; ++i)
-            for (int j = 0; j < 2; ++j)
-                r.StrokeRect(RectF(L + i * (cell + gap), T + j * (cell + gap), cell, cell), w, c);
-        break;
-    }
-    case 2: { // profile（头 + 肩）
-        float hr = 3.2f * s;
-        r.StrokeEllipse(RectF(cx - hr, y + 2.0f * s - hr, hr * 2, hr * 2), 1.4f * s, c);
-        float sw = 11.0f * s, st = y + 9.0f * s, sb = y + 15.0f * s;
-        float sl = cx - sw * 0.5f, sr = cx + sw * 0.5f;
-        r.DrawLine(sl, sb, sl, sb - 2.0f * s, 1.4f * s, c);
-        r.DrawLine(sl, sb - 2.0f * s, cx, st, 1.4f * s, c);
-        r.DrawLine(cx, st, sr, sb - 2.0f * s, 1.4f * s, c);
-        r.DrawLine(sr, sb - 2.0f * s, sr, sb, 1.4f * s, c);
-        break;
-    }
-    default: { // gear（外圆 + 中心点 + 齿）
-        float orad = 5.0f * s;
-        r.StrokeEllipse(RectF(cx - orad, cy - orad, orad * 2, orad * 2), 1.4f * s, c);
-        float crad = 1.8f * s;
-        r.FillEllipse(RectF(cx - crad, cy - crad, crad * 2, crad * 2), c);
-        for (int k = 0; k < 8; ++k) {
-            float a = kPi * k / 4.0f;
-            float c1 = std::cos(a), s1 = std::sin(a);
-            r.DrawLine(cx + c1 * orad, cy + s1 * orad,
-                       cx + c1 * (orad + 2.0f * s), cy + s1 * (orad + 2.0f * s), 1.6f * s, c);
-        }
-        break;
-    }
-    }
-}
-
-// 三横线 hamburger（16x16）
-void DrawHamburger(Renderer& r, float x, float y, float s, const Color& c) {
-    float w = 16.0f * s, cy = y + 8.0f * s, gap = 5.0f * s;
-    for (int i = -1; i <= 1; ++i)
-        r.DrawLine(x, cy + i * gap, x + w, cy + i * gap, 1.4f * s, c);
-}
-
-// 分组 chevron（规格：40x36 盒内 8px 字号，展开时 rotate 180）
-void DrawChevron(Renderer& r, float cx, float cy, float s, bool up, const Color& c) {
-    float w = 4.0f * s, h = 2.4f * s;
-    if (up) {
-        r.DrawLine(cx - w, cy + h * 0.5f, cx, cy - h * 0.5f, 1.2f * s, c);
-        r.DrawLine(cx, cy - h * 0.5f, cx + w, cy + h * 0.5f, 1.2f * s, c);
-    } else {
-        r.DrawLine(cx - w, cy - h * 0.5f, cx, cy + h * 0.5f, 1.2f * s, c);
-        r.DrawLine(cx, cy + h * 0.5f, cx + w, cy - h * 0.5f, 1.2f * s, c);
-    }
-}
-
-} // namespace
+// 图标全部来自官方 Fluent UI System Icons（见 utils/FluentIcons.h），
+// 本文件不再自绘任何图标。
 
 // ============================================================
 // 内容管理
@@ -112,7 +40,7 @@ int NavigationView::AddSeparator() {
     return AddItem(it);
 }
 
-int NavigationView::AddGroup(const std::wstring& label, int icon,
+int NavigationView::AddGroup(const std::wstring& label, FluentIcon icon,
                              const std::vector<Item>& children, bool expanded) {
     Item p;
     p.label = label;
@@ -133,7 +61,7 @@ int NavigationView::AddGroup(const std::wstring& label, int icon,
 void NavigationView::SetSettings(const std::wstring& label) {
     Item it;
     it.label = label;
-    it.icon = 3;
+    it.icon = FluentIcon::Settings;
     it.kind = ItemKind::Settings;
     AddItem(it);
 }
@@ -620,7 +548,9 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
                                 ? r.CenterX() - kIconSize * s * 0.5f
                                 : r.x + padL;
         const Color fg = dis ? textDisabled : textPrimary;
-        DrawIcon(renderer, it.icon, iconX, iconY, s, fg.WithAlpha(fg.a * a));
+        // 官方 Fluent 图标：16×16 图标盒，垂直居中于行
+        DrawFluentIcon(renderer, it.icon, iconX, iconY, kIconSize * s,
+                       fg.WithAlpha(fg.a * a));
 
         // 标签（紧凑/收起时随 paneT_ 淡出）
         float labelAlpha = (mode_ == DisplayMode::Top) ? 0.0f : (paneT_ * a);
@@ -633,11 +563,15 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
                               DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
         }
 
-        // 分组 chevron（紧凑态隐藏）
+        // 分组 chevron（规格：8px 字形，展开时 rotate 180）
         if (it.expandable && !it.isChild && paneT_ > 0.3f) {
-            bool up = GroupProgress(static_cast<int>(i)) > 0.5f;
-            DrawChevron(renderer, r.Right() - kChevRH * s, r.CenterY(), s, up,
-                        fg.WithAlpha(fg.a * a * paneT_));
+            const float gs = 8.0f * s;
+            const float cx = r.Right() - kChevRH * s;
+            const float cy = r.CenterY();
+            DrawFluentIcon(renderer, FluentIcon::ChevronDown,
+                           cx - gs * 0.5f, cy - gs * 0.5f, gs,
+                           fg.WithAlpha(fg.a * a * paneT_),
+                           GroupProgress(static_cast<int>(i)) * kPi);
         }
     }
 
@@ -674,7 +608,7 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
             // 规格：图标 margin 0 12px（紧凑宽度 40 时恰好水平居中）
             const float hx = hr.x + kItemPadX * s;
             const float hy = hr.y + (hr.h - 16.0f * s) * 0.5f;
-            DrawHamburger(renderer, hx, hy, s, textPrimary);
+            DrawFluentIcon(renderer, FluentIcon::Navigation, hx, hy, 16.0f * s, textPrimary);
 
             const float la = paneT_ * paneT_;
             if (la > 0.03f && !paneTitle_.empty()) {

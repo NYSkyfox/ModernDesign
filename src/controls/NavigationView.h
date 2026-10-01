@@ -3,6 +3,7 @@
 #include "Geometry.h"
 #include "core/Renderer.h"
 #include "core/Theme.h"
+#include "utils/FluentIcons.h"
 #include <functional>
 #include <string>
 #include <vector>
@@ -45,7 +46,7 @@ public:
 
     struct Item {
         std::wstring label;
-        int    icon = 0;             // 0 home, 1 grid, 2 profile, 3 gear
+        FluentIcon icon = FluentIcon::Home;   // 官方 Fluent 图标
         ItemKind kind = ItemKind::Item;
         bool   isChild = false;      // 分组子项（padding-left 44 / indicator 36）
         int    group = -1;           // 所属分组父项索引（-1 = 顶层）
@@ -70,7 +71,7 @@ public:
     int  AddItem(const Item& it);                              // 返回索引
     int  AddHeader(const std::wstring& text);
     int  AddSeparator();
-    int  AddGroup(const std::wstring& label, int icon,
+    int  AddGroup(const std::wstring& label, FluentIcon icon,
                   const std::vector<Item>& children, bool expanded = true);
     void SetSettings(const std::wstring& label);
     void ClearItems();

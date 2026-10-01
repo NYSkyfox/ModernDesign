@@ -233,6 +233,200 @@ void Renderer::PopClip() {
 }
 
 // ============================================================
+// 矢量图标路径（SVG path 子集：M/L/H/V/C/Z）
+//
+// 只服务于「官方 Fluent 图标」这类由工具生成的静态路径，
+// 因此刻意保持极小：不支持弧线 A / 二次曲线 Q（上游数据也用不到）。
+// ============================================================
+namespace {
+
+// 读一个 SVG 数字（允许逗号/空白分隔、前后符号、小数点、指数）
+bool SvgNumber(const char* s, size_t& i, float& out) {
+    while (s[i] == ' ' || s[i] == ',' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') ++i;
+    size_t start = i;
+    bool anyDigit = false;
+    if (s[i] == '+' || s[i] == '-') ++i;
+    bool dot = false;
+    while (s[i]) {
+        const char ch = s[i];
+        if (ch >= '0' && ch <= '9') { anyDigit = true; ++i; continue; }
+        if (ch == '.' && !dot) { dot = true; ++i; continue; }
+        if ((ch == 'e' || ch == 'E') && anyDigit) {
+            ++i;
+            if (s[i] == '+' || s[i] == '-') ++i;
+            continue;
+        }
+        break;
+    }
+    if (!anyDigit) { i = start; return false; }
+
+    char buf[40];
+    size_t n = i - start;
+    if (n > sizeof(buf) - 1) n = sizeof(buf) - 1;
+    memcpy(buf, s + start, n);
+    buf[n] = '\0';
+    try {
+        out = std::stof(buf);
+    } catch (...) {
+        return false;
+    }
+    return true;
+}
+
+// 把 d 属性写进 sink
+bool BuildSvgSink(ID2D1GeometrySink* sink, const char* s) {
+    float cx = 0.0f, cy = 0.0f;   // 当前点
+    float sx = 0.0f, sy = 0.0f;   // 子路径起点
+    char  cmd = 0;
+    bool  open = false;
+    size_t i = 0;
+
+    auto number = [&](float& v) { return SvgNumber(s, i, v); };
+    auto ensureOpen = [&]() {
+        if (!open) {
+            sink->BeginFigure(D2D1::Point2F(cx, cy), D2D1_FIGURE_BEGIN_FILLED);
+            open = true;
+            sx = cx;
+            sy = cy;
+        }
+    };
+
+    while (true) {
+        while (s[i] == ' ' || s[i] == ',' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') ++i;
+        if (!s[i]) break;
+
+        const char ch = s[i];
+        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+            cmd = ch;
+            ++i;
+        } else if (!cmd) {
+            return false;   // 路径必须以命令开头
+        }
+
+        float a[6] = {};
+        switch (cmd) {
+        case 'M': case 'm': {
+            if (!number(a[0]) || !number(a[1])) return false;
+            float x = a[0], y = a[1];
+            if (cmd == 'm') { x += cx; y += cy; }
+            if (open) sink->EndFigure(D2D1_FIGURE_END_OPEN);
+            sink->BeginFigure(D2D1::Point2F(x, y), D2D1_FIGURE_BEGIN_FILLED);
+            open = true;
+            cx = sx = x;
+            cy = sy = y;
+            cmd = (cmd == 'M') ? 'L' : 'l';   // 后续参数对按隐式 L 处理
+            break;
+        }
+        case 'L': case 'l': {
+            if (!number(a[0]) || !number(a[1])) return false;
+            float x = a[0], y = a[1];
+            if (cmd == 'l') { x += cx; y += cy; }
+            ensureOpen();
+            sink->AddLine(D2D1::Point2F(x, y));
+            cx = x; cy = y;
+            break;
+        }
+        case 'H': case 'h': {
+            if (!number(a[0])) return false;
+            float x = (cmd == 'h') ? cx + a[0] : a[0];
+            ensureOpen();
+            sink->AddLine(D2D1::Point2F(x, cy));
+            cx = x;
+            break;
+        }
+        case 'V': case 'v': {
+            if (!number(a[0])) return false;
+            float y = (cmd == 'v') ? cy + a[0] : a[0];
+            ensureOpen();
+            sink->AddLine(D2D1::Point2F(cx, y));
+            cy = y;
+            break;
+        }
+        case 'C': case 'c': {
+            for (int k = 0; k < 6; ++k)
+                if (!number(a[k])) return false;
+            float x1 = a[0], y1 = a[1], x2 = a[2], y2 = a[3], x = a[4], y = a[5];
+            if (cmd == 'c') {
+                x1 += cx; y1 += cy;
+                x2 += cx; y2 += cy;
+                x += cx;  y += cy;
+            }
+            ensureOpen();
+            sink->AddBezier(D2D1::BezierSegment(D2D1::Point2F(x1, y1),
+                                                D2D1::Point2F(x2, y2),
+                                                D2D1::Point2F(x, y)));
+            cx = x; cy = y;
+            break;
+        }
+        case 'Z': case 'z': {
+            if (open) {
+                sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+                open = false;
+            }
+            cx = sx;
+            cy = sy;
+            break;
+        }
+        default:
+            return false;   // 未支持的命令（A/Q/S/T）
+        }
+    }
+    if (open) sink->EndFigure(D2D1_FIGURE_END_OPEN);
+    return true;
+}
+
+} // namespace
+
+ID2D1PathGeometry* Renderer::GetSvgGeometry(const char* d) {
+    if (!d) return nullptr;
+    for (auto& e : svgPaths_)
+        if (e.d == d) return e.geo.Get();
+    if (!d2dFactory_) return nullptr;
+
+    ComPtr<ID2D1PathGeometry> geo;
+    if (FAILED(d2dFactory_->CreatePathGeometry(geo.GetAddressOf()))) return nullptr;
+    ComPtr<ID2D1GeometrySink> sink;
+    if (FAILED(geo->Open(sink.GetAddressOf()))) return nullptr;
+    sink->SetFillMode(D2D1_FILL_MODE_WINDING);   // 与 SVG 默认 fill-rule（nonzero）一致
+    if (!BuildSvgSink(sink.Get(), d)) {
+        sink->Close();
+        return nullptr;
+    }
+    if (FAILED(sink->Close())) return nullptr;
+
+    SvgPathEntry entry;
+    entry.d = d;
+    entry.geo = geo;
+    svgPaths_.push_back(entry);
+    return geo.Get();
+}
+
+void Renderer::FillSvgPath(const char* d, float viewBox, float x, float y, float size,
+                           const Color& c, float rotRad) {
+    if (!rt_ || viewBox <= 0.0f || size <= 0.0f) return;
+    ID2D1PathGeometry* geo = GetSvgGeometry(d);
+    if (!geo) return;
+    ID2D1SolidColorBrush* b = GetBrush(c);
+    if (!b) return;
+
+    const float k = size / viewBox;
+    D2D1_MATRIX_3X2_F old{};
+    rt_->GetTransform(&old);
+
+    D2D1_MATRIX_3X2_F m = D2D1::Matrix3x2F::Scale(k, k) *
+                          D2D1::Matrix3x2F::Translation(x, y);
+    if (rotRad != 0.0f) {
+        const float deg = rotRad * 180.0f / kPi;
+        m = m * D2D1::Matrix3x2F::Rotation(
+                    deg, D2D1::Point2F(x + size * 0.5f, y + size * 0.5f));
+    }
+
+    rt_->SetTransform(m);
+    rt_->FillGeometry(geo, b);
+    rt_->SetTransform(old);
+}
+
+// ============================================================
 // 文本
 // ============================================================
 void Renderer::DrawText(const std::wstring& text,

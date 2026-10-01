@@ -2,6 +2,7 @@
 #include "core/Renderer.h"
 #include "core/Theme.h"
 #include "controls/Expander.h"
+#include "utils/FluentIcons.h"
 
 namespace ModernDesign {
 
@@ -285,20 +286,11 @@ void Expander::Draw(Renderer& renderer, const Theme& theme, float scale) {
                                      kOuterRadius * s, subtleHov.WithAlpha(a));
         }
 
-        // chevron 折线（12px Fluent 字形的矢量近似）
-        float aw = 4.0f * s, ah = 2.5f * s;
-        float ca = std::cos(ang), sa = std::sin(ang);
-        auto rot = [&](float px, float py, float& ox, float& oy) {
-            float dx = px - cx, dy = py - cy;
-            ox = cx + dx * ca - dy * sa;
-            oy = cy + dx * sa + dy * ca;
-        };
-        float x1, y1, x2, y2, x3, y3;
-        rot(cx - aw, cy - ah, x1, y1);
-        rot(cx,      cy + ah, x2, y2);
-        rot(cx + aw, cy - ah, x3, y3);
-        renderer.DrawLine(x1, y1, x2, y2, 1.5f * s, textSecondary);
-        renderer.DrawLine(x2, y2, x3, y3, 1.5f * s, textSecondary);
+        // 官方 Fluent chevron（12px 字形），绕字形中心旋转
+        const float gs = 12.0f * s;
+        DrawFluentIcon(renderer, FluentIcon::ChevronDown,
+                       cx - gs * 0.5f, cy - gs * 0.5f, gs,
+                       textSecondary, ang);
     }
 
     // ---- 7. Content ----

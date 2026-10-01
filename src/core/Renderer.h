@@ -50,6 +50,14 @@ public:
     void DrawLine(float x1, float y1, float x2, float y2,
                   float strokeWidth, const Color& c);
 
+    // ---- 矢量图标路径（SVG path 子集）----
+    // 支持 M/L/H/V/C/Z（大小写、绝对/相对），在 (x,y) 为左上角、边长 size 的
+    // 方盒内填充；路径源坐标系为 viewBox×viewBox，自动等比缩放。
+    // rotRad：绕图标盒中心的旋转（弧度），用于箭头展开动画。
+    // 相同 d 指针只会解析/建几何一次（内部缓存，d 必须是静态字面量）。
+    void FillSvgPath(const char* d, float viewBox, float x, float y, float size,
+                     const Color& c, float rotRad = 0.0f);
+
     // ---- 裁剪（Push/Pop 成对使用，作用于当前图层栈）----
     void PushClip(const RectF& clip);
     void PopClip();
@@ -83,6 +91,8 @@ protected:
     void ReleaseRenderTarget();
 
     ID2D1SolidColorBrush* GetBrush(const Color& c);
+    // 取（或首次解析/缓存）SVG 路径几何
+    ID2D1PathGeometry* GetSvgGeometry(const char* d);
     IDWriteTextFormat* GetTextFormat(const wchar_t* face, float fontSize,
                                      DWRITE_FONT_WEIGHT weight,
                                      DWRITE_TEXT_ALIGNMENT align,
@@ -110,6 +120,13 @@ protected:
         ComPtr<IDWriteTextFormat> format;
     };
     std::vector<TextFormatEntry> textFormats_;
+
+    // SVG 路径几何缓存（key = d 字符串指针，要求是静态字面量）
+    struct SvgPathEntry {
+        const char* d = nullptr;
+        ComPtr<ID2D1PathGeometry> geo;
+    };
+    std::vector<SvgPathEntry> svgPaths_;
 
     UINT pixelWidth_ = 0;
     UINT pixelHeight_ = 0;

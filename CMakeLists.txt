@@ -66,6 +66,7 @@ set(MD_CONTROL_SOURCES
 set(MD_UTIL_SOURCES
     src/utils/Logger.cpp
     src/utils/StringUtils.cpp
+    src/utils/FluentIcons.cpp
 )
 
 add_library(ModernDesign STATIC

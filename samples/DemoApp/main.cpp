@@ -20,6 +20,7 @@
 #include "controls/ProgressBar.h"
 #include "controls/Slider.h"
 #include "controls/Expander.h"
+#include "utils/FluentIcons.h"
 
 using namespace ModernDesign;
 using namespace ModernDesign::Controls;
@@ -63,11 +64,11 @@ protected:
 
         nav_.SetPaneTitle(L"Modern Design");
         nav_.AddHeader(L"Navigation");
-        nav_.AddItem({ L"Home", 0 });        // idx 1 → Home 页
-        nav_.AddItem({ L"Expander", 1 });    // idx 2 → Expander 页
+        nav_.AddItem({ L"Home", FluentIcon::Home });            // idx 1 → Home 页
+        nav_.AddItem({ L"Expander", FluentIcon::ChevronUpDown }); // idx 2 → Expander 页
         nav_.AddHeader(L"Controls");
         // 可折叠分组（父项只负责展开/收起，子项共享 Home 页）
-        nav_.AddGroup(L"Basics", 1,
+        nav_.AddGroup(L"Basics", FluentIcon::Grid,
                       { { L"CheckBox" }, { L"ToggleSwitch" },
                         { L"Slider" }, { L"RadioButton" } },
                       true);
@@ -213,14 +214,8 @@ protected:
         expanderA_.SetIsExpanded(true);
         expanderA_.SetContentHeight(64.0f);   // DIP（含 padding）
         expanderA_.SetHeaderIcon([](Renderer& r, const Theme& th, float sc, const RectF& box) {
-            // 20×20 信息图标（圆 + i），矢量绘制（无 Fluent Icon 字体依赖）
-            float cx = box.CenterX(), cy = box.CenterY();
-            float d = box.w;
-            Color col = th.TextSecondary();
-            r.StrokeEllipse(RectF(cx - d * 0.5f, cy - d * 0.5f, d, d), 1.2f * sc, col);
-            float dot = 1.8f * sc;
-            r.FillEllipse(RectF(cx - dot * 0.5f, cy - 4.2f * sc, dot, dot), col);
-            r.DrawLine(cx, cy - 1.4f * sc, cx, cy + 4.0f * sc, 1.4f * sc, col);
+            // 官方 Fluent info 图标（20×20 图标盒）
+            DrawFluentIcon(r, FluentIcon::Info, box.x, box.y, box.w, th.TextSecondary());
         });
         expanderA_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF&) {
             expAToggle_.Draw(r, t, sc);
