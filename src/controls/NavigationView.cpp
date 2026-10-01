@@ -660,7 +660,8 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
     // ---- 6) command row：hamburger + PaneTitle ----
     if (mode_ != DisplayMode::Top) {
         const RectF hr = HamburgerRect();
-        if (!hr.IsEmpty() && (hamburgerT_ > 0.01f || mode_ == DisplayMode::LeftMinimal)) {
+        if (!hr.IsEmpty()) {
+            // 只有 hover/press 背景是条件绘制；图标必须常显
             const Color hb = hamburgerPressed_ ? subtlePress : subtleHov;
             const float alpha = FzMx(hamburgerT_, mode_ == DisplayMode::LeftMinimal ? paneT_ : 0.0f);
             if (alpha > 0.01f)
