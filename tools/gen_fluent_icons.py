@@ -87,6 +87,13 @@ def main() -> int:
         if len(ds) != 1:
             print(f"!! {label}: 期望 1 个 path，实得 {len(ds)}", file=sys.stderr)
             return 1
+        # 渲染端（Renderer::FillSvgPath）只支持 M/L/H/V/C/Z；
+        # 上游若改用弧线 A / 二次曲线 Q / S / T，这里直接失败，避免"静默不显示"
+        bad = sorted(set(re.findall(r'[AQSTaqst]', ds[0])))
+        if bad:
+            print(f"!! {label}: 路径含渲染端不支持的命令 {''.join(bad)}"
+                  f"（需扩展 Renderer::FillSvgPath）", file=sys.stderr)
+            return 1
         entries.append((name, path, w, ds[0]))
         print(f"ok  {label:34s} viewBox {w:g}  d={len(ds[0])} 字符")
 
