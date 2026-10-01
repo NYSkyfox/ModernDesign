@@ -1,0 +1,103 @@
+# ============================================================
+# probe-d2d — 探测当前 VS 2026 预览 SDK 的 Direct2D 裁剪/图层 API
+#
+# 背景：ModernDesign 的 Renderer::PushClip/PopClip 在本 SDK 上
+#       SetClip / BeginLayer / PushLayer / D2D1_LAYER_PARAMETERS
+#       都报“不是成员/字段不存在”，说明该预览 SDK 的 D2D 接口被重构。
+#       本工作流在 Windows runner 上直接读取 Windows Kits 的 d2d1*.h，
+#       grep 出裁剪/图层相关声明（带上下文），打包成 artifact 供分析。
+#
+# 用法：Actions 页面选 "probe-d2d" 点 "Run workflow"，
+#       跑完下载 artifact "d2d-probe" 里的 probe_d2d.txt。
+# ============================================================
+name: probe-d2d
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Probe D2D clip/layer API
+    runs-on: windows-latest
+
+    steps:
+      - name: Locate SDK D2D headers
+        shell: pwsh
+        run: |
+          Write-Host "=== Windows Kits versions ==="
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host $_.Name }
+          Write-Host "=== d2d headers found ==="
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Recurse -File -Include d2d1.h, d2d1_1.h, d2d1_2.h -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host $_.FullName }
+
+      - name: Grep clip / layer API declarations
+        shell: pwsh
+        run: |
+          $out = New-Object System.Text.StringBuilder
+          $hdrs = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Recurse -File -Include d2d1.h, d2d1_1.h, d2d1_2.h -ErrorAction SilentlyContinue
+          # 裁剪 / 图层 / 几何 / 工厂 相关关键字
+          $pat = 'SetClip|ClearClip|CreateLayer|BeginLayer|EndLayer|PushLayer|PopLayer|LayerParameters|LayerOptions|D2D1_LAYER|ID2D1Layer|CreateGeometry|CreateGeometryGroup|CreateRectangle|ID2D1RenderTarget|ID2D1Factory|D2D1_RENDER_TARGET'
+          foreach ($h in $hdrs) {
+            [void]$out.AppendLine("")
+            [void]$out.AppendLine("################  $($h.FullName)  ################")
+            $lines = Get-Content $h.FullName
+            $i = 0
+            foreach ($ln in $lines) {
+              $i++
+              if ($ln -match $pat) {
+                $c = $i - 1                      # 当前行 0-indexed
+                $s = [Math]::Max(0, $c - 2)
+                $e = [Math]::Min($lines.Count - 1, $c + 2)
+                [void]$out.AppendLine("--- L${i} ---")
+                for ($j = $s; $j -le $e; $j++) {
+                  $mark = if ($j -eq $c) { '>> ' } else { '   ' }
+                  [void]$out.AppendLine("${mark}$($lines[$j])")
+                }
+              }
+            }
+          }
+          [System.IO.File]::WriteAllText('probe_d2d.txt', $out.ToString(), [System.Text.Encoding]::UTF8)
+          $fi = Get-Item probe_d2d.txt
+          Write-Host "probe_d2d.txt size = $($fi.Length) bytes"
+
+      - name: Also dump full ID2D1RenderTarget / ID2D1RenderTarget1/2/3 interface blocks
+        shell: pwsh
+        run: |
+          $out = New-Object System.Text.StringBuilder
+          $hdrs = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Recurse -File -Include d2d1.h, d2d1_1.h, d2d1_2.h -ErrorAction SilentlyContinue
+          foreach ($h in $hdrs) {
+            $lines = Get-Content $h.FullName
+            $i = 0
+            while ($i -lt $lines.Count) {
+              if ($lines[$i] -match 'ID2D1RenderTarget(1|2|3)?\s*$' -or $lines[$i] -match 'interface\s+ID2D1RenderTarget' -or $lines[$i] -match 'ID2D1RenderTarget') {
+                # 抓到接口定义，往后多打印 80 行
+                $s = [Math]::Max(0, $i)
+                $e = [Math]::Min($lines.Count - 1, $i + 80)
+                [void]$out.AppendLine("")
+                [void]$out.AppendLine("####  $($h.Name)  L$($i+1)  ####")
+                for ($j = $s; $j -le $e; $j++) { [void]$out.AppendLine($lines[$j]) }
+              }
+              $i++
+            }
+          }
+          [System.IO.File]::WriteAllText('probe_d2d_interfaces.txt', $out.ToString(), [System.Text.Encoding]::UTF8)
+          $fi = Get-Item probe_d2d_interfaces.txt
+          Write-Host "probe_d2d_interfaces.txt size = $($fi.Length) bytes"
+
+      - name: Show head of probe to console
+        shell: pwsh
+        run: |
+          Write-Host "=== probe_d2d.txt (first 120 lines) ==="
+          Get-Content probe_d2d.txt -TotalCount 120
+
+      - name: Upload probe artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2d-probe
+          path: |
+            probe_d2d.txt
+            probe_d2d_interfaces.txt
+          retention-days: 14
+          if-no-files-found: warn
