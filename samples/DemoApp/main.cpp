@@ -239,6 +239,7 @@ protected:
                     flyout_.Show();
                 } else if (k == 2) {
                     menu_.Show();
+                    menu_.ExpandSubitem(4);   // 展开 "Style" 子项（CI 出二级菜单）
                 } else {
                     tip_.SetPointer(tipHost_.GetBounds().CenterX(),
                                     tipHost_.GetBounds().CenterY());
@@ -369,13 +370,22 @@ protected:
             Invalidate();
         });
 
-        // MenuFlyout：普通项 / 图标项 / 快捷键 / 分隔线 / 复选 / 单选
+        // MenuFlyout：普通项 / 图标项 / 快捷键 / 分隔线 / 复选 / 单选 / 子项 / 分裂项
         menu_.AddItemWithIcon(L"New", FluentIcon::Home, L"Ctrl+N");
         menu_.AddItemWithIcon(L"Open", FluentIcon::Grid, L"Ctrl+O");
         menu_.AddItem(L"Save", L"Ctrl+S");
         menu_.AddSeparator();
+        {
+            const int styleIdx = menu_.AddSubItemWithIcon(L"Style", FluentIcon::Info);
+            menu_.AddChildIcon(styleIdx, L"Bold", FluentIcon::Info);
+            menu_.AddChildIcon(styleIdx, L"Italic", FluentIcon::Info);
+            menu_.AddChild(styleIdx, L"Underline");
+            const int splitIdx = menu_.AddSplitItem(L"Save as");
+            menu_.AddChild(splitIdx, L"Save copy");
+            menu_.AddChild(splitIdx, L"Export");
+        }
+        menu_.AddSeparator();
         menu_.AddToggle(L"Word wrap", true);
-        menu_.AddItem(L"Disabled item", L"", false);
         menu_.AddSeparator();
         menu_.AddRadio(L"Small", true);
         menu_.AddRadio(L"Medium", false);
