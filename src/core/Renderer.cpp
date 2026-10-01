@@ -222,24 +222,14 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2,
 }
 
 void Renderer::PushClip(const RectF& clip) {
-    if (!rt_ || !d2dFactory_) return;
-    HRESULT hr = d2dFactory_->CreateRectangle(clip.ToD2D(), clipGeo_.GetAddressOf());
-    if (FAILED(hr) || !clipGeo_) return;
-
-    D2D1_LAYER_PARAMETERS lp{};
-    lp.geometry = clipGeo_.Get();
-    lp.opacity = 1.0f;
-    lp.opacitySourceRect = D2D1::RectF(clip.ToD2D());
-    lp.transform = D2D1::Matrix3x2F::Identity();
-    lp.antialiasMode = D2D1_ANTIALIAS_MODE_ALIASED;
-    lp.layerOptions = D2D1_LAYER_OPTIONS_NONE;
-    lp.minLevel = D2D1_FEATURE_LEVEL_DEFAULT;
-    rt_->BeginLayer(lp, nullptr);
+    if (!rt_) return;
+    // 用矩形裁剪（D2D 1.0 SetClip，版本无关）；本框架中 Push/Pop 严格配对、深度为 1
+    rt_->SetClip(&clip.ToD2D());
 }
 
 void Renderer::PopClip() {
     if (!rt_) return;
-    rt_->EndLayer();
+    rt_->ClearClip();
 }
 
 // ============================================================
