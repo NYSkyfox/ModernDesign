@@ -336,8 +336,12 @@ void NavigationView::RebuildLayout() {
         // 普通项 / 分组子项
         float gp = 1.0f;
         int parent = GroupParentOf(static_cast<int>(i));
-        if (parent >= 0) gp = GroupProgress(parent);
-        if (gp <= 0.001f) continue;                    // 分组已收起
+        if (parent >= 0) {
+            // 规格 isPaneGroupChildrenVisible = !isClosedCompact：
+            // 面板处于紧凑（收起）态时，分组子项整组高度归 0（随面板一起收起）
+            gp = GroupProgress(parent) * Clamp01(paneT_);
+            if (gp <= 0.001f) continue;
+        }
 
         float h = kItemH * s * gp;
         placed_[i].rect = RectF(px + pad, y + kItemM * s * gp, innerW, h);
