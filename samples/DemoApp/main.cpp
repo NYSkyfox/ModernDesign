@@ -54,7 +54,8 @@ protected:
             nav_.AddItem({ L"Home", 0, false });
             nav_.AddItem({ L"Expander", 1, false });
             nav_.SetSettings(L"Settings");
-            nav_.SetSelectedIndex(0);   // 默认 Home 页
+            nav_.SetSelectedIndex(1);   // 默认停在 Expander 页（Demo 主展示页）
+            current_ = 1;
             nav_.SetSelectionCallback([this](int i) { current_ = i; Invalidate(); });
 
             BindExpanderPage();
@@ -99,9 +100,9 @@ protected:
         // ---- Expander 页布局 ----
         {
             float x = ContX(), y = kMargin * s + 70.0f * s;
-            float w = FzMn(ContW(), 460.0f * s);
+            float w = ContW();              // WinUI 默认 HorizontalAlignment=Stretch → 占满整行
             float pad = 16.0f * s;
-            float rowW = FzMn(w - 2.0f * pad, 240.0f * s);
+            float rowW = w - 2.0f * pad;    // 内容子控件同样占满内容区（开关贴右边缘）
             float mb = Expander::kMarginBottom * s;
 
             // A：HeaderIcon + Description + Content

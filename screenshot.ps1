@@ -54,6 +54,7 @@ public class MdW {
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
 
     // PW_RENDERFULLCONTENT：抓取 D2D/D3D/DirectComposition 内容
     public const uint PW_RENDERFULLCONTENT = 2;
@@ -134,6 +135,12 @@ $rect = New-Object MdW+RECT
 $w = $rect.r - $rect.l; $h = $rect.b - $rect.t
 Write-Host "窗口矩形: ($($rect.l),$($rect.t)) ${w}x${h}"
 if ($w -lt 20 -or $h -lt 20) { $w = 1024; $h = 768 }
+
+# 3) 把鼠标移离控件区：CI runner 的光标默认停在屏幕正中，
+#    可能恰好压在某个控件上 → 截图里出现"随机 hover"假象。
+#    移到窗口右下角空白处，触发 WM_MOUSEMOVE/WM_MOUSELEAVE 让 hover 复位。
+[MdW]::SetCursorPos($rect.r - 40, $rect.b - 40) | Out-Null
+Start-Sleep -Milliseconds 600
 
 # ---- PrintWindow 抓取窗口内容（PowerShell 侧建位图 + 取 DC + 保存）----
 $captured = $false
