@@ -25,6 +25,7 @@
 #include "controls/Flyout.h"
 #include "controls/MenuFlyout.h"
 #include "controls/ToolTip.h"
+#include "controls/HyperlinkButton.h"
 #include "utils/FluentIcons.h"
 
 using namespace ModernDesign;
