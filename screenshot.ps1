@@ -42,7 +42,6 @@ using System.Text;
 public class MdW {
     public static IntPtr found = IntPtr.Zero;
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int l, t, r, b; }
-    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int x, y; }
 
     [DllImport("user32.dll", EntryPoint="GetClassNameW", CharSet=CharSet.Unicode)]
     public static extern int GetClassName(IntPtr h, StringBuilder s, int max);
@@ -53,8 +52,6 @@ public class MdW {
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
-    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
-    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref POINT p);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
@@ -145,57 +142,56 @@ if ($w -lt 20 -or $h -lt 20) { $w = 1024; $h = 768 }
 [MdW]::SetCursorPos($rect.r - 40, $rect.b - 40) | Out-Null
 Start-Sleep -Milliseconds 600
 
-# ---- 客户区裁剪参数 ----
-# 最大化窗口的「窗口矩形」比屏幕多出 8px 不可见缩放边框（左/右/下各 8px，
-# 100% DPI 时）。那块在屏幕外、客户区之外，App 也不绘制。
-# PrintWindow 按窗口矩形抓图会把它一起抓下来 → 表现为左右两条黑边。
-# 这里按客户区裁剪，只保留真正渲染出来的 UI（顺带去掉系统标题栏）。
-$cr = New-Object MdW+RECT
-[MdW]::GetClientRect($hwnd, [ref]$cr) | Out-Null
-$pt = New-Object MdW+POINT
-$pt.x = 0; $pt.y = 0
-[MdW]::ClientToScreen($hwnd, [ref]$pt) | Out-Null
-$offX = $pt.x - $rect.l
-$offY = $pt.y - $rect.t
-$cw = $cr.r - $cr.l
-$ch = $cr.b - $cr.t
-$cropOk = ($cw -gt 0) -and ($ch -gt 0) -and (($offX + $cw) -le $w) -and (($offY + $ch) -le $h)
-Write-Host "客户区: offset=($offX,$offY)  ${cw}x${ch}  cropOk=$cropOk"
-
-# ---- PrintWindow 抓取窗口内容（PowerShell 侧建位图 + 取 DC + 保存）----
+# ---- 主方式：截整个虚拟屏幕（含任务栏）----
+# App 在 CI 里设了 MODERNDESIGN_NO_NOREDIRECT=1，关闭 WS_EX_NOREDIRECTIONBITMAP，
+# D2D 内容走 GDI 重定向路径 → CopyFromScreen 可以直接抓到。
+# 全屏截图能看到窗口在桌面上的真实位置与尺寸（最大化时不会有窗口矩形多出的 8px 黑边）。
 $captured = $false
-$bmp = New-Object System.Drawing.Bitmap($w, $h, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$hdc = $g.GetHdc()
-$ok = [MdW]::PrintWindow($hwnd, $hdc, 2)   # 2 = PW_RENDERFULLCONTENT
-$g.ReleaseHdc($hdc)
-$g.Dispose()
-if ($ok) {
-    if ($cropOk) {
-        $cropRect = New-Object System.Drawing.Rectangle($offX, $offY, $cw, $ch)
-        $out = $bmp.Clone($cropRect, $bmp.PixelFormat)
-        $out.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-        $out.Dispose()
-        Write-Host ("已保存客户区截图(PrintWindow+裁剪): {0}  {1}x{2}  ({3} KB)" -f $shotPath, $cw, $ch, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
+$screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+Write-Host "虚拟屏幕: ($($screen.X),$($screen.Y))  $($screen.Width)x$($screen.Height)"
+try {
+    $bmp = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($screen.X, $screen.Y, 0, 0, $bmp.Size)
+    $g.Dispose()
+
+    # 全黑检测（无交互桌面 / 会话锁定时 CopyFromScreen 会得到全黑图）
+    $sum = 0.0; $n = 0
+    for ($yy = 0; $yy -lt $screen.Height; $yy += 16) {
+        for ($xx = 0; $xx -lt $screen.Width; $xx += 16) {
+            $c = $bmp.GetPixel($xx, $yy)
+            $sum += ($c.R + $c.G + $c.B); $n++
+        }
+    }
+    $avg = if ($n -gt 0) { $sum / (3.0 * $n) } else { 0.0 }
+    Write-Host ("全屏亮度均值 = {0:N1}" -f $avg)
+
+    if ($avg -lt 5.0) {
+        Write-Host "全屏截图疑似全黑，改用回退方案"
+        $bmp.Dispose()
     } else {
         $bmp.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-        Write-Host ("已保存窗口截图(PrintWindow, 未裁剪): {0}  {1}x{2}  ({3} KB)" -f $shotPath, $w, $h, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
+        $bmp.Dispose()
+        Write-Host ("已保存全屏截图(含任务栏): {0}  {1}x{2}  ({3} KB)" -f $shotPath, $screen.Width, $screen.Height, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
+        $captured = $true
     }
-    $bmp.Dispose()
-    $captured = $true
-} else {
-    $bmp.Dispose()
+} catch {
+    Write-Host "全屏截图失败: $_"
 }
 
-# 回退：PrintWindow 失败 → 全屏 CopyFromScreen（至少留一张诊断图）
+# ---- 回退：PrintWindow 抓窗口矩形（至少留一张诊断图）----
 if (-not $captured) {
-    Write-Host "PrintWindow 失败，回退到全屏截图"
-    $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-    $bmp2 = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)
+    Write-Host "回退到 PrintWindow（窗口矩形）"
+    $bmp2 = New-Object System.Drawing.Bitmap($w, $h, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $g2 = [System.Drawing.Graphics]::FromImage($bmp2)
-    $g2.CopyFromScreen($screen.X, $screen.Y, 0, 0, $bmp2.Size)
+    $hdc = $g2.GetHdc()
+    $ok = [MdW]::PrintWindow($hwnd, $hdc, 2)   # 2 = PW_RENDERFULLCONTENT
+    $g2.ReleaseHdc($hdc)
     $g2.Dispose()
-    $bmp2.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+    if ($ok) {
+        $bmp2.Save($shotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        Write-Host ("已保存窗口截图(PrintWindow 回退): {0}  {1}x{2}  ({3} KB)" -f $shotPath, $w, $h, [math]::Round((Get-Item $shotPath).Length/1KB, 1))
+    }
     $bmp2.Dispose()
 }
 
