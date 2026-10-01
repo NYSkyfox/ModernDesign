@@ -116,11 +116,11 @@ protected:
         ly += kRowHeight * s + kGroupGap * s;
 
         // RadioButtons（互斥）
-        radioA_.SetText(L"Radio option A");
+        radioA_.SetText(L"RadioButton unchecked");
         radioA_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
         ly += kRowHeight * s;
 
-        radioB_.SetText(L"Radio option B");
+        radioB_.SetText(L"RadioButton checked");
         radioB_.SetSelected(true);
         radioB_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
         ly += kRowHeight * s + kGroupGap * s;
