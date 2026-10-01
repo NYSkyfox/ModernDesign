@@ -221,6 +221,17 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2,
     rt_->DrawLine(D2D1::Point2F(x1, y1), D2D1::Point2F(x2, y2), b, strokeWidth);
 }
 
+void Renderer::PushClip(const RectF& clip) {
+    if (!rt_) return;
+    rt_->PushLayer(D2D1::LayerParameters(clip.ToD2D(), D2D1::LayerOptions::NONE),
+                   nullptr, nullptr);
+}
+
+void Renderer::PopClip() {
+    if (!rt_) return;
+    rt_->Pop();
+}
+
 // ============================================================
 // 文本
 // ============================================================

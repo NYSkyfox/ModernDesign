@@ -57,6 +57,8 @@ set(MD_CONTROL_SOURCES
     src/controls/ProgressBar.cpp
     src/controls/ProgressRing.cpp
     src/controls/Slider.cpp
+    src/controls/Expander.cpp
+    src/controls/NavigationView.cpp
     src/controls/Card.cpp
     src/controls/TextBlock.cpp
 )

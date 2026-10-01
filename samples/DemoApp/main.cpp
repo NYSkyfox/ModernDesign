@@ -1,35 +1,34 @@
 // ============================================================
-// ModernDesign DemoApp — 演示应用
+// ModernDesign DemoApp — 演示应用（导航窗格 + 多页面）
 //
-// 展示框架的 8 种基础控件。
-//   鼠标：悬停 / 点击 / 拖拽
-//   键盘：Space 切换深浅主题
+//   左侧：NavigationView 侧边栏（hamburger 折叠 + 菜单项 + accent 指示条）
+//   右侧：根据选中项切换页面
+//       Home     — 基础控件合集
+//       Expander — 可折叠容器示例
+//       Settings — 设置项示例
+//
+//   鼠标：悬停 / 点击 / 拖拽    键盘：Space 切换深浅主题
 // ============================================================
 
 #include "pch.h"
 #include "app/App.h"
+#include "controls/NavigationView.h"
 #include "controls/Button.h"
 #include "controls/CheckBox.h"
 #include "controls/ToggleSwitch.h"
 #include "controls/RadioButton.h"
 #include "controls/ProgressBar.h"
-#include "controls/ProgressRing.h"
 #include "controls/Slider.h"
-#include "controls/Card.h"
-#include "controls/TextBlock.h"
+#include "controls/Expander.h"
 
 using namespace ModernDesign;
 using namespace ModernDesign::Controls;
 
 namespace {
-
-// 演示窗口尺寸（客户区逻辑像素）
-constexpr float kMargin = 32.0f;
-constexpr float kColumnGap = 40.0f;
-constexpr float kRowGap = 8.0f;
+constexpr float kMargin = 28.0f;
 constexpr float kRowHeight = 32.0f;
-constexpr float kGroupGap = 28.0f;
-
+constexpr float kRowGap = 6.0f;
+constexpr float kGroupGap = 26.0f;
 } // namespace
 
 // ============================================================
@@ -37,357 +36,229 @@ constexpr float kGroupGap = 28.0f;
 // ============================================================
 class DemoWindow : public App {
 protected:
+    // 内容区（面板右侧）几何
+    float PaneW() const { return nav_.PaneWidthDip() * DpiScale(); }
+    float ContX() const { return PaneW() + kMargin * DpiScale(); }
+    float ContW() const { return FzMx(0.0f, ClientWidth() - PaneW() - kMargin * DpiScale() * 2); }
+
     void OnLayout() override {
         float s = DpiScale();
-        float colW = FzMn((ClientWidth() - kMargin * 2 - kColumnGap) * 0.5f, 520.0f);
+        nav_.SetScale(s);
+        nav_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
+        nav_.SetPaneTitle(L"Modern Design");
+        nav_.AddItem({ L"Home", 0, false });
+        nav_.AddItem({ L"Expander", 1, false });
+        nav_.SetSettings(L"Settings");
 
-        float x = kMargin * s;
-        float y = kMargin * s;
-
-        // ---- 标题区 ----
-        title_.SetText(L"Modern Design");
-        title_.SetFontSize(26.0f);
-        title_.SetBold(true);
-        title_.SetBounds(RectF(x, y, colW * 2 + kColumnGap * s, 34.0f * s));
-        y += 40.0f * s;
-
-        subtitle_.SetText(L"Fluent Design (WinUI 3) framework — pure C++ / Direct2D");
-        subtitle_.SetFontSize(12.0f);
-        subtitle_.SetBounds(RectF(x, y, colW * 2 + kColumnGap * s, 18.0f * s));
-        y += 28.0f * s;
-
-        dividerY_ = y;
-        dividerW_ = colW * 2 + kColumnGap * s;
-        y += 24.0f * s;
-
-        // ============================================================
-        // 左栏
-        // ============================================================
-        float ly = y;
-        float lx = x;
-
-        // Buttons
-        float bw = 88.0f * s;
-        float bh = kRowHeight * s;
-        float bg = kRowGap * s;
-
-        btnStandard_.SetText(L"Standard");
-        btnStandard_.SetVariant(ButtonVariant::Standard);
-        btnStandard_.SetBounds(RectF(lx, ly, bw, bh));
-
-        btnAccent_.SetText(L"Accent");
-        btnAccent_.SetVariant(ButtonVariant::Accent);
-        btnAccent_.SetBounds(RectF(lx + (bw + bg), ly, bw, bh));
-
-        btnSubtle_.SetText(L"Subtle");
-        btnSubtle_.SetVariant(ButtonVariant::Subtle);
-        btnSubtle_.SetBounds(RectF(lx + (bw + bg) * 2, ly, bw, bh));
-
-        btnDisabled_.SetText(L"Disabled");
-        btnDisabled_.SetVariant(ButtonVariant::Standard);
-        btnDisabled_.SetEnabled(false);
-        btnDisabled_.SetBounds(RectF(lx + (bw + bg) * 3, ly, bw, bh));
-
-        ly += bh + kGroupGap * s;
-
-        // CheckBoxes
-        chkA_.SetText(L"CheckBox unchecked");
-        chkA_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        chkB_.SetText(L"CheckBox checked");
-        chkB_.SetChecked(true);
-        chkB_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        chkC_.SetText(L"CheckBox indeterminate");
-        chkC_.SetTristate(true);
-        chkC_.SetIndeterminate(true);
-        chkC_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        chkD_.SetText(L"CheckBox disabled");
-        chkD_.SetEnabled(false);
-        chkD_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s + kGroupGap * s;
-
-        // ToggleSwitches
-        toggleA_.SetText(L"Toggle off");
-        toggleA_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        toggleB_.SetText(L"Toggle on");
-        toggleB_.SetIsOn(true);
-        toggleB_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        toggleC_.SetText(L"Toggle disabled");
-        toggleC_.SetEnabled(false);
-        toggleC_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s + kGroupGap * s;
-
-        // RadioButtons（互斥）
-        radioA_.SetText(L"RadioButton unchecked");
-        radioA_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s;
-
-        radioB_.SetText(L"RadioButton checked");
-        radioB_.SetSelected(true);
-        radioB_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s + kGroupGap * s;
-
-        // Slider
-        slider_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
-        ly += kRowHeight * s + kGroupGap * s;
-
-        // ProgressBars
-        progressDeterminate_.SetProgress(0.65f);
-        progressDeterminate_.SetBounds(RectF(lx, ly, colW, 12.0f * s));
-        ly += 28.0f * s;
-
-        progressIndeterminate_.SetIndeterminate(true);
-        progressIndeterminate_.SetBounds(RectF(lx, ly, colW, 12.0f * s));
-
-        // ============================================================
-        // 右栏
-        // ============================================================
-        float rx = x + colW + kColumnGap * s;
-        float ry = y;
-
-        // ProgressRing
-        ringIndeterminate_.SetSize(44.0f);
-        ringIndeterminate_.SetIndeterminate(true);
-        ringIndeterminate_.SetBounds(RectF(rx, ry, 60.0f * s, 44.0f * s));
-        ry += 60.0f * s;
-
-        ringDeterminate_.SetSize(44.0f);
-        ringDeterminate_.SetProgress(0.7f);
-        ringDeterminate_.SetBounds(RectF(rx, ry, 60.0f * s, 44.0f * s));
-        ry += 72.0f * s;
-
-        // Cards
-        cardProfile_.SetTitle(L"Profile");
-        cardProfile_.SetContent(
-            L"Name     NYSkyfox\n"
-            L"Role     Developer\n"
-            L"Location  Earth");
-        float h1 = cardProfile_.MeasureHeight(GetTheme(), s);
-        cardProfile_.SetBounds(RectF(rx, ry, colW, h1));
-        ry += h1 + kRowGap * s * 2;
-
-        cardAbout_.SetTitle(L"About ModernDesign");
-        cardAbout_.SetContent(
-            L"Zero external dependencies.\n"
-            L"Only Win32 + Direct2D + DirectWrite.\n"
-            L"\n"
-            L"Press Space to toggle theme.");
-        float h2 = cardAbout_.MeasureHeight(GetTheme(), s);
-        cardAbout_.SetBounds(RectF(rx, ry, colW, h2));
-
-        // 主题切换开关回调（放在 OnLayout 外避免重复绑定）
         static bool bound = false;
         if (!bound) {
             bound = true;
-            toggleTheme_.SetText(L"Dark mode");
-            toggleTheme_.SetChangedCallback([this](bool on) {
-                if (on != !GetTheme().lightMode) {
-                    ToggleTheme();
-                }
+            nav_.SetSelectionCallback([this](int i) { current_ = i; Invalidate(); });
+
+            // Expander 页面：内容区放一个 ToggleSwitch
+            expander_.SetHeader(L"Feature");
+            expander_.SetDescription(L"Collapsible container demo");
+            expander_.SetIsExpanded(true);
+            expander_.SetContentHeight(64.0f); // DIP 自然高（含 padding）
+            expander_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF& inner) {
+                expanderToggle_.Draw(r, t, sc);
             });
-            toggleTheme_.SetBounds(RectF(x, ClientHeight() - 48.0f * s, colW, kRowHeight * s));
+            expander_.SetContentUpdateFn([this](float dt) { return expanderToggle_.Update(dt); });
+            expander_.SetContentInputFn(
+                [this](float x, float y) { expanderToggle_.OnMouseDown(x, y); },
+                [this](float x, float y) { expanderToggle_.OnMouseUp(x, y); },
+                [this](float x, float y) { expanderToggle_.OnMouseMove(x, y); },
+                [this](float x, float y) { expanderToggle_.OnMouseLeave(); });
+        }
+
+        // ---- Home 页布局 ----
+        {
+            float x = ContX(), y = kMargin * s + 70.0f * s; // 标题区下方
+            homeBtnStd_.SetText(L"Standard");
+            homeBtnStd_.SetVariant(ButtonVariant::Standard);
+            homeBtnStd_.SetBounds(RectF(x, y, 96.0f * s, kRowHeight * s));
+            homeBtnAcc_.SetText(L"Accent");
+            homeBtnAcc_.SetVariant(ButtonVariant::Accent);
+            homeBtnAcc_.SetBounds(RectF(x + 108.0f * s, y, 96.0f * s, kRowHeight * s));
+            y += kRowHeight * s + kGroupGap * s;
+
+            homeChk_.SetText(L"CheckBox checked");
+            homeChk_.SetChecked(true);
+            homeChk_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kRowGap * s;
+
+            homeTog_.SetText(L"Toggle on");
+            homeTog_.SetIsOn(true);
+            homeTog_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kGroupGap * s;
+
+            homeRadioA_.SetText(L"RadioButton unchecked");
+            homeRadioA_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kRowGap * s;
+            homeRadioB_.SetText(L"RadioButton checked");
+            homeRadioB_.SetSelected(true);
+            homeRadioB_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kGroupGap * s;
+
+            homeSlider_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kGroupGap * s;
+
+            homeProg_.SetProgress(0.6f);
+            homeProg_.SetBounds(RectF(x, y, ContW(), 12.0f * s));
+        }
+
+        // ---- Expander 页布局 ----
+        {
+            float x = ContX(), y = kMargin * s + 70.0f * s;
+            float w = FzMn(ContW(), 460.0f * s);
+            expander_.SetBounds(RectF(x, y, w, (expander_.HeaderHeight() + expander_.ContentHeight()) * s));
+            float pad = 16.0f * s;
+            expanderToggle_.SetText(L"Enable feature");
+            expanderToggle_.SetIsOn(true);
+            expanderToggle_.SetBounds(RectF(x + pad, y + 48.0f * s + pad, FzMn(ContW(), 220.0f) * s, kRowHeight * s));
+        }
+
+        // ---- Settings 页布局 ----
+        {
+            float x = ContX(), y = kMargin * s + 70.0f * s;
+            setTogA_.SetText(L"Dark mode");
+            setTogA_.SetIsOn(!GetTheme().lightMode);
+            setTogA_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kRowGap * s;
+            setTogB_.SetText(L"Notifications");
+            setTogB_.SetIsOn(true);
+            setTogB_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            if (!setBound_) {
+                setBound_ = true;
+                setTogA_.SetChangedCallback([this](bool on) { if (on != !GetTheme().lightMode) ToggleTheme(); });
+            }
         }
     }
 
+    void DrawPageHeader(const std::wstring& title, float s) {
+        DrawText(title, ContX(), kMargin * s + 24.0f * s, ContW(), 44.0f * s,
+                 L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
+                 DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
+        DrawLine(ContX(), kMargin * s + 66.0f * s, ContX() + ContW(), kMargin * s + 66.0f * s,
+                 1.0f * s, GetTheme().CardBorder());
+    }
+
     bool OnUpdate(float dt) override {
-        bool animating = false;
-        animating |= btnStandard_.Update(dt);
-        animating |= btnAccent_.Update(dt);
-        animating |= btnSubtle_.Update(dt);
-        animating |= btnDisabled_.Update(dt);
-        animating |= chkA_.Update(dt);
-        animating |= chkB_.Update(dt);
-        animating |= chkC_.Update(dt);
-        animating |= chkD_.Update(dt);
-        animating |= toggleA_.Update(dt);
-        animating |= toggleB_.Update(dt);
-        animating |= toggleC_.Update(dt);
-        animating |= toggleTheme_.Update(dt);
-        animating |= radioA_.Update(dt);
-        animating |= radioB_.Update(dt);
-        animating |= slider_.Update(dt);
-        animating |= progressIndeterminate_.Update(dt);
-        animating |= ringIndeterminate_.Update(dt);
-        return animating;
+        bool anim = nav_.Update(dt);
+        anim |= homeBtnStd_.Update(dt); anim |= homeBtnAcc_.Update(dt);
+        anim |= homeChk_.Update(dt); anim |= homeTog_.Update(dt);
+        anim |= homeRadioA_.Update(dt); anim |= homeRadioB_.Update(dt);
+        anim |= homeSlider_.Update(dt);
+        anim |= expander_.Update(dt);
+        anim |= expanderToggle_.Update(dt);
+        anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt);
+        return anim;
     }
 
     void OnRender() override {
         float s = DpiScale();
         const Theme& theme = GetTheme();
 
-        title_.Draw(*this, theme, s);
-        subtitle_.Draw(*this, theme, s);
-
-        // 分割线
-        DrawLine(kMargin * s, dividerY_, kMargin * s + dividerW_, dividerY_,
-                 1.0f * s, theme.CardBorder());
-
-        // Buttons
-        btnStandard_.Draw(*this, theme, s);
-        btnAccent_.Draw(*this, theme, s);
-        btnSubtle_.Draw(*this, theme, s);
-        btnDisabled_.Draw(*this, theme, s);
-
-        // CheckBoxes
-        chkA_.Draw(*this, theme, s);
-        chkB_.Draw(*this, theme, s);
-        chkC_.Draw(*this, theme, s);
-        chkD_.Draw(*this, theme, s);
-
-        // Toggles
-        toggleA_.Draw(*this, theme, s);
-        toggleB_.Draw(*this, theme, s);
-        toggleC_.Draw(*this, theme, s);
-        toggleTheme_.Draw(*this, theme, s);
-
-        // Radios
-        radioA_.Draw(*this, theme, s);
-        radioB_.Draw(*this, theme, s);
-
-        // Slider
-        slider_.Draw(*this, theme, s);
-
-        // Progress
-        progressDeterminate_.Draw(*this, theme, s);
-        progressIndeterminate_.Draw(*this, theme, s);
-        ringIndeterminate_.Draw(*this, theme, s);
-        ringDeterminate_.Draw(*this, theme, s);
-
-        // Cards
-        cardProfile_.Draw(*this, theme, s);
-        cardAbout_.Draw(*this, theme, s);
-    }
-
-    void OnMouseMove(float x, float y) override {
-        btnStandard_.OnMouseMove(x, y);
-        btnAccent_.OnMouseMove(x, y);
-        btnSubtle_.OnMouseMove(x, y);
-        btnDisabled_.OnMouseMove(x, y);
-        chkA_.OnMouseMove(x, y);
-        chkB_.OnMouseMove(x, y);
-        chkC_.OnMouseMove(x, y);
-        chkD_.OnMouseMove(x, y);
-        toggleA_.OnMouseMove(x, y);
-        toggleB_.OnMouseMove(x, y);
-        toggleC_.OnMouseMove(x, y);
-        toggleTheme_.OnMouseMove(x, y);
-        radioA_.OnMouseMove(x, y);
-        radioB_.OnMouseMove(x, y);
-        slider_.OnMouseMove(x, y);
-    }
-
-    void OnMouseLeave() override {
-        btnStandard_.OnMouseLeave();
-        btnAccent_.OnMouseLeave();
-        btnSubtle_.OnMouseLeave();
-        btnDisabled_.OnMouseLeave();
-        chkA_.OnMouseLeave();
-        chkB_.OnMouseLeave();
-        chkC_.OnMouseLeave();
-        chkD_.OnMouseLeave();
-        toggleA_.OnMouseLeave();
-        toggleB_.OnMouseLeave();
-        toggleC_.OnMouseLeave();
-        toggleTheme_.OnMouseLeave();
-        radioA_.OnMouseLeave();
-        radioB_.OnMouseLeave();
-        slider_.OnMouseLeave();
-    }
-
-    void OnMouseDown(float x, float y) override {
-        btnStandard_.OnMouseDown(x, y);
-        btnAccent_.OnMouseDown(x, y);
-        btnSubtle_.OnMouseDown(x, y);
-        btnDisabled_.OnMouseDown(x, y);
-        chkA_.OnMouseDown(x, y);
-        chkB_.OnMouseDown(x, y);
-        chkC_.OnMouseDown(x, y);
-        chkD_.OnMouseDown(x, y);
-        radioA_.OnMouseDown(x, y);
-        radioB_.OnMouseDown(x, y);
-        slider_.OnMouseDown(x, y);
-    }
-
-    void OnMouseUp(float x, float y) override {
-        btnStandard_.OnMouseUp(x, y);
-        btnAccent_.OnMouseUp(x, y);
-        btnSubtle_.OnMouseUp(x, y);
-        btnDisabled_.OnMouseUp(x, y);
-        chkA_.OnMouseUp(x, y);
-        chkB_.OnMouseUp(x, y);
-        chkC_.OnMouseUp(x, y);
-        chkD_.OnMouseUp(x, y);
-        toggleA_.OnMouseUp(x, y);
-        toggleB_.OnMouseUp(x, y);
-        toggleC_.OnMouseUp(x, y);
-        toggleTheme_.OnMouseUp(x, y);
-        radioA_.OnMouseUp(x, y);
-        radioB_.OnMouseUp(x, y);
-        slider_.OnMouseUp(x, y);
-    }
-
-    void OnThemeChanged() override {
-        toggleTheme_.SetIsOn(!GetTheme().lightMode);
-    }
-
-    void OnKeyDown(int vk) override {
-        if (vk == VK_SPACE) {
-            ToggleTheme();
+        nav_.Draw(*this, theme, s); // 画 panel + content 背景
+        if (current_ <= 0) {
+            DrawPageHeader(L"Home", s);
+            homeBtnStd_.Draw(*this, theme, s); homeBtnAcc_.Draw(*this, theme, s);
+            homeChk_.Draw(*this, theme, s); homeTog_.Draw(*this, theme, s);
+            homeRadioA_.Draw(*this, theme, s); homeRadioB_.Draw(*this, theme, s);
+            homeSlider_.Draw(*this, theme, s); homeProg_.Draw(*this, theme, s);
+        } else if (current_ == 1) {
+            DrawPageHeader(L"Expander", s);
+            expander_.Draw(*this, theme, s);
+        } else {
+            DrawPageHeader(L"Settings", s);
+            setTogA_.Draw(*this, theme, s); setTogB_.Draw(*this, theme, s);
         }
     }
 
+    void OnMouseMove(float x, float y) override {
+        nav_.OnMouseMove(x, y);
+        if (current_ <= 0) {
+            homeBtnStd_.OnMouseMove(x, y); homeBtnAcc_.OnMouseMove(x, y);
+            homeChk_.OnMouseMove(x, y); homeTog_.OnMouseMove(x, y);
+            homeRadioA_.OnMouseMove(x, y); homeRadioB_.OnMouseMove(x, y);
+            homeSlider_.OnMouseMove(x, y);
+        } else if (current_ == 1) {
+            expander_.OnMouseMove(x, y);
+        } else {
+            setTogA_.OnMouseMove(x, y); setTogB_.OnMouseMove(x, y);
+        }
+    }
+    void OnMouseLeave() override {
+        nav_.OnMouseLeave();
+        if (current_ <= 0) {
+            homeBtnStd_.OnMouseLeave(); homeBtnAcc_.OnMouseLeave();
+            homeChk_.OnMouseLeave(); homeTog_.OnMouseLeave();
+            homeRadioA_.OnMouseLeave(); homeRadioB_.OnMouseLeave();
+            homeSlider_.OnMouseLeave();
+        } else if (current_ == 1) {
+            expander_.OnMouseLeave();
+        } else {
+            setTogA_.OnMouseLeave(); setTogB_.OnMouseLeave();
+        }
+    }
+    void OnMouseDown(float x, float y) override {
+        nav_.OnMouseDown(x, y);
+        if (current_ <= 0) {
+            homeBtnStd_.OnMouseDown(x, y); homeBtnAcc_.OnMouseDown(x, y);
+            homeChk_.OnMouseDown(x, y); homeTog_.OnMouseDown(x, y);
+            homeRadioA_.OnMouseDown(x, y); homeRadioB_.OnMouseDown(x, y);
+            homeSlider_.OnMouseDown(x, y);
+        } else if (current_ == 1) {
+            expander_.OnMouseDown(x, y);
+        } else {
+            setTogA_.OnMouseDown(x, y); setTogB_.OnMouseDown(x, y);
+        }
+    }
+    void OnMouseUp(float x, float y) override {
+        nav_.OnMouseUp(x, y);
+        if (current_ <= 0) {
+            homeBtnStd_.OnMouseUp(x, y); homeBtnAcc_.OnMouseUp(x, y);
+            homeChk_.OnMouseUp(x, y); homeTog_.OnMouseUp(x, y);
+            homeRadioA_.OnMouseUp(x, y); homeRadioB_.OnMouseUp(x, y);
+            homeSlider_.OnMouseUp(x, y);
+        } else if (current_ == 1) {
+            expander_.OnMouseUp(x, y);
+        } else {
+            setTogA_.OnMouseUp(x, y); setTogB_.OnMouseUp(x, y);
+        }
+    }
+
+    void OnThemeChanged() override {
+        setTogA_.SetIsOn(!GetTheme().lightMode);
+    }
+    void OnKeyDown(int vk) override { if (vk == VK_SPACE) ToggleTheme(); }
+
 private:
-    float dividerY_ = 0.0f;
-    float dividerW_ = 0.0f;
+    int current_ = 0;
+    bool setBound_ = false;
+    NavigationView nav_;
 
-    TextBlock title_;
-    TextBlock subtitle_;
+    // Home
+    Button homeBtnStd_, homeBtnAcc_;
+    CheckBox homeChk_;
+    ToggleSwitch homeTog_;
+    RadioButton homeRadioA_, homeRadioB_;
+    Slider homeSlider_;
+    ProgressBar homeProg_;
 
-    Button btnStandard_;
-    Button btnAccent_;
-    Button btnSubtle_;
-    Button btnDisabled_;
+    // Expander
+    Expander expander_;
+    ToggleSwitch expanderToggle_;
 
-    CheckBox chkA_;
-    CheckBox chkB_;
-    CheckBox chkC_;
-    CheckBox chkD_;
-
-    ToggleSwitch toggleA_;
-    ToggleSwitch toggleB_;
-    ToggleSwitch toggleC_;
-    ToggleSwitch toggleTheme_;
-
-    RadioButton radioA_;
-    RadioButton radioB_;
-
-    Slider slider_;
-    ProgressBar progressDeterminate_;
-    ProgressBar progressIndeterminate_;
-    ProgressRing ringIndeterminate_;
-    ProgressRing ringDeterminate_;
-
-    Card cardProfile_;
-    Card cardAbout_;
+    // Settings
+    ToggleSwitch setTogA_, setTogB_;
 };
 
-// ============================================================
-// 入口
-// ============================================================
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
     DemoWindow app;
     HRESULT hr = app.Initialize(hInstance, nCmdShow);
     if (FAILED(hr)) {
-        MessageBoxW(nullptr, L"ModernDesign 初始化失败（需要 Win10 1809+）",
+        MessageBoxW(nullptr, L"ModernDesign init failed (requires Win10 1809+)",
                     L"ModernDesign", MB_ICONERROR);
         return 1;
     }

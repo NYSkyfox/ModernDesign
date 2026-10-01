@@ -50,6 +50,10 @@ public:
     void DrawLine(float x1, float y1, float x2, float y2,
                   float strokeWidth, const Color& c);
 
+    // ---- 裁剪（Push/Pop 成对使用，作用于当前图层栈）----
+    void PushClip(const RectF& clip);
+    void PopClip();
+
     // ---- 文本 ----
     // 在 (x, y, maxW, maxH) 布局框内绘制文本
     //   align  : 水平对齐（默认 LEADING = 左对齐）
