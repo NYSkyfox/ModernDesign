@@ -86,63 +86,75 @@ void Button::Draw(Renderer& renderer, const Theme& theme, float scale) {
     float s = scale;
     float radius = kBtnRadius * s;
     float fontSize = kBtnFontSize * s;
-    float revealAlpha = 0.6f + 0.4f * revealT_;   // 渐入
 
-    Color bg = theme.ButtonFill();
-    Color fg = theme.ButtonText();
-    Color border = theme.ButtonBorder();
-    bool drawBorder = (variant_ == ButtonVariant::Standard);
-    bool drawBg = (variant_ != ButtonVariant::Subtle);
+    const bool disabled = !enabled_;
+    const bool hovering = hot_ && !disabled;
+    const bool pressing = pressed_ && !disabled;
 
-    if (!enabled_) {
-        // ---- Disabled ----
-        if (drawBg) {
-            bg = theme.lightMode ? Color(0.0f, 0.0f, 0.0f, 0.04f)
-                                 : Color(1.0f, 1.0f, 1.0f, 0.06f);
-        }
-        fg = theme.lightMode ? Color(0.0f, 0.0f, 0.0f, 0.36f)
-                             : Color(1.0f, 1.0f, 1.0f, 0.36f);
-        drawBorder = false;
-    } else if (variant_ == ButtonVariant::Accent) {
-        // ---- Accent（强调色）----
-        bg = theme.Accent();
-        if (pressT_ > 0.0f) {
-            bg = bg.Darken(0.08f * pressT_);
-        } else if (hoverT_ > 0.0f) {
-            bg = bg.Lighten(0.04f * hoverT_);
-        }
-        fg = theme.TextOnAccent();
-        drawBorder = false;
-    } else if (variant_ == ButtonVariant::Standard) {
-        // ---- Standard ----
-        if (pressT_ > 0.0f) {
-            bg = theme.ButtonFill().Darken(0.08f * pressT_);
-        } else if (hoverT_ > 0.0f) {
-            bg = theme.ButtonFill().Darken(0.03f * hoverT_);
-        }
+    // ===== WinUIonWeb 精确规格 (Button.vue + theme.css) =====
+    // min-height 32, font 14, corner 4, border 1px
+    // 状态优先级: disabled > pressed > hover > default
+    // Standard: bg --ctrl-fill-{default,tertiary,secondary}；border 上 --ctrl-border、下 --ctrl-border-accent
+    // Accent:   bg --accent-{base,pressed,hover}；fg --accent-text；pressed/disabled 边框透明
+    // Subtle:   bg --subtle-{transparent,tertiary,secondary}；无描边
+    Color accent = theme.Accent();
+    bool light = theme.lightMode;
+
+    // accent 派生（跟 accent 色值走）
+    Color accentHover   = accent.WithAlpha(0.90f);
+    Color accentPressed = accent.WithAlpha(0.80f);
+    Color accentText    = light ? Color(1, 1, 1, 1) : Color(0, 0, 0, 1);
+    Color accentTextSec = light ? Color(1, 1, 1, 0.70f) : Color(0, 0, 0, 0.50f);
+    Color accentFillDis = light ? Color(0, 0, 0, 0.22f) : Color(1, 1, 1, 0.16f);
+    Color accentBorder  = light ? Color(1, 1, 1, 0.08f) : Color(0, 0, 0, 0.1373f);
+
+    // 标准 / 中性色（逐条对应 theme.css 的 rgba）
+    Color fillDefault = light ? Color(1, 1, 1, 0.70f)        : Color(1, 1, 1, 0.0605f);
+    Color fillHover   = light ? Color(0.976f, 0.976f, 0.976f, 0.50f) : Color(1, 1, 1, 0.0837f);
+    Color fillPressed = light ? Color(0.976f, 0.976f, 0.976f, 0.30f) : Color(1, 1, 1, 0.0326f);
+    Color fillDis     = light ? Color(0.976f, 0.976f, 0.976f, 0.30f) : Color(1, 1, 1, 0.0419f);
+    Color subtleHover = light ? Color(0, 0, 0, 0.0373f) : Color(1, 1, 1, 0.0605f);
+    Color subtlePress = light ? Color(0, 0, 0, 0.0241f) : Color(1, 1, 1, 0.0419f);
+    Color borderTop   = light ? Color(0, 0, 0, 0.06f) : Color(1, 1, 1, 0.0706f);   // --ctrl-border
+    Color borderBottom = light ? Color(0, 0, 0, 0.16f) : Color(1, 1, 1, 0.0941f);  // --ctrl-border-accent
+    Color textPrimary = theme.TextPrimary();
+    Color textSecond  = light ? Color(0, 0, 0, 0.62f) : Color(1, 1, 1, 0.77f);
+    Color textDis     = light ? Color(0, 0, 0, 0.36f) : Color(1, 1, 1, 0.36f);
+    Color transparent = Color(1, 1, 1, 0);
+
+    Color bg, border, fg;
+    bool isAccent = (variant_ == ButtonVariant::Accent);
+
+    if (isAccent) {
+        if (disabled)       { bg = accentFillDis; border = transparent;      fg = textDis; }
+        else if (pressing)  { bg = accentPressed; border = transparent;      fg = accentTextSec; }
+        else if (hovering)  { bg = accentHover;   border = accentBorder;     fg = accentText; }
+        else                { bg = accent;        border = accentBorder;     fg = accentText; }
+    } else if (variant_ == ButtonVariant::Subtle) {
+        // 无描边
+        border = transparent;
+        if (disabled)       { bg = transparent;  fg = textDis; }
+        else if (pressing)  { bg = subtlePress;  fg = textSecond; }
+        else if (hovering)  { bg = subtleHover;  fg = textPrimary; }
+        else                { bg = transparent;  fg = textPrimary; }
     } else {
-        // ---- Subtle（仅 hover 淡底）----
-        if (hot_ || pressed_) {
-            float t = FzMx(hoverT_, pressT_);
-            bg = theme.lightMode ? Color(0.0f, 0.0f, 0.0f, 0.05f * t)
-                                 : Color(1.0f, 1.0f, 1.0f, 0.08f * t);
-            drawBg = true;
-        } else {
-            drawBg = false;
-        }
+        // Standard
+        border = Color::Lerp(borderTop, borderBottom, 0.5f);
+        if (disabled)       { bg = fillDis;     border = transparent; fg = textDis; }
+        else if (pressing)  { bg = fillPressed; border = border;       fg = textSecond; }
+        else if (hovering)  { bg = fillHover;   border = border;       fg = textPrimary; }
+        else                { bg = fillDefault; border = border;       fg = textPrimary; }
     }
 
     // 底色
-    if (drawBg) {
+    if (bg.a > 0.001f) {
         renderer.FillRoundedRect(bounds_, radius, bg);
     }
-
-    // 边框
-    if (drawBorder) {
+    // 边框（上/下渐变用平均色近似）
+    if (border.a > 0.001f) {
         renderer.StrokeRoundedRect(bounds_, radius, 1.0f * s, border);
     }
-
-    // 文字：水平 + 垂直均交给 DirectWrite 对齐属性（不依赖 Measure）
+    // 文字
     if (!text_.empty()) {
         renderer.DrawTextCentered(text_, bounds_, L"Segoe UI", fontSize,
                                   DWRITE_FONT_WEIGHT_NORMAL, fg);
