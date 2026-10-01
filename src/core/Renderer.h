@@ -92,6 +92,7 @@ protected:
     ComPtr<ID2D1Factory1> d2dFactory_;
     ComPtr<IDWriteFactory> dwriteFactory_;
     ComPtr<ID2D1HwndRenderTarget> rt_;
+    ComPtr<ID2D1Geometry> clipGeo_;   // PushClip/PopClip 的裁剪几何（生命周期覆盖 layer）
 
     // 画刷缓存
     struct SolidBrush {

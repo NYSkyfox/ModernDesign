@@ -222,14 +222,24 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2,
 }
 
 void Renderer::PushClip(const RectF& clip) {
-    if (!rt_) return;
-    rt_->PushLayer(D2D1::LayerParameters(clip.ToD2D(), D2D1::LayerOptions::NONE),
-                   nullptr, nullptr);
+    if (!rt_ || !d2dFactory_) return;
+    HRESULT hr = d2dFactory_->CreateRectangle(clip.ToD2D(), clipGeo_.GetAddressOf());
+    if (FAILED(hr) || !clipGeo_) return;
+
+    D2D1_LAYER_PARAMETERS lp{};
+    lp.geometry = clipGeo_.Get();
+    lp.opacity = 1.0f;
+    lp.opacitySourceRect = D2D1::RectF(clip.ToD2D());
+    lp.transform = D2D1::Matrix3x2F::Identity();
+    lp.antialiasMode = D2D1_ANTIALIAS_MODE_ALIASED;
+    lp.layerOptions = D2D1_LAYER_OPTIONS_NONE;
+    lp.minLevel = D2D1_FEATURE_LEVEL_DEFAULT;
+    rt_->BeginLayer(lp, nullptr);
 }
 
 void Renderer::PopClip() {
     if (!rt_) return;
-    rt_->Pop();
+    rt_->EndLayer();
 }
 
 // ============================================================
