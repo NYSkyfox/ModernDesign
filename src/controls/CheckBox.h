@@ -19,8 +19,10 @@ public:
     void SetText(const std::wstring& text) { text_ = text; }
     const std::wstring& GetText() const { return text_; }
 
-    void SetChecked(bool checked) { checked_ = checked; }
+    void SetChecked(bool checked) { checked_ = checked; if (checked) indeterminate_ = false; }
     bool IsChecked() const { return checked_; }
+    void SetIndeterminate(bool ind) { indeterminate_ = ind; checked_ = ind ? false : checked_; }
+    bool IsIndeterminate() const { return indeterminate_; }
     void SetTristate(bool tri) { triState_ = tri; }
     bool IsTristate() const { return triState_; }
 
@@ -45,13 +47,17 @@ public:
 private:
     std::wstring text_ = L"CheckBox";
     bool checked_ = false;
+    bool indeterminate_ = false;
     bool triState_ = false;
     bool enabled_ = true;
     RectF bounds_;
     std::function<void(bool)> checkCallback_;
 
     bool hot_ = false;
+    bool pressed_ = false;
     float hoverT_ = 0.0f;
+    float pressedT_ = 0.0f;
+    float checkedT_ = 0.0f;
     bool animating_ = false;
 };
 

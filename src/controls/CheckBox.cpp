@@ -5,34 +5,64 @@
 
 namespace ModernDesign {
 
-static constexpr float kCheckSize = 18.0f;
-static constexpr float kCheckRadius = 2.0f;
+static constexpr float kCheckSize = 20.0f;   // WinUIonWeb .checkbox-box 20x20
+static constexpr float kCheckRadius = 4.0f;  // border-radius 4px
 static constexpr float kCheckFontSize = 14.0f;
-static constexpr float kCheckPad = 8.0f;
+static constexpr float kCheckPad = 8.0f;     // gap 8px
 
 void CheckBox::OnMouseMove(float x, float y) {
     if (!enabled_) return;
     hot_ = bounds_.Contains(x, y);
 }
 
-void CheckBox::OnMouseLeave() { hot_ = false; }
+void CheckBox::OnMouseLeave() {
+    hot_ = false;
+    pressed_ = false;
+}
 
 void CheckBox::OnMouseDown(float x, float y) {
     if (!enabled_) return;
-    if (bounds_.Contains(x, y)) {
+    if (bounds_.Contains(x, y)) pressed_ = true;
+}
+
+void CheckBox::OnMouseUp(float x, float y) {
+    if (!enabled_) return;
+    bool wasPressed = pressed_;
+    pressed_ = false;
+    if (!wasPressed || !bounds_.Contains(x, y)) return;
+
+    if (triState_) {
+        // 三态循环：unchecked -> checked -> indeterminate -> unchecked
+        if (!checked_ && !indeterminate_) {
+            checked_ = true;
+            if (checkCallback_) checkCallback_(true);
+        } else if (checked_) {
+            checked_ = false;
+            indeterminate_ = true;
+            if (checkCallback_) checkCallback_(false);
+        } else {
+            indeterminate_ = false;
+            if (checkCallback_) checkCallback_(false);
+        }
+    } else {
         checked_ = !checked_;
         if (checkCallback_) checkCallback_(checked_);
     }
 }
 
-void CheckBox::OnMouseUp(float x, float y) {
-    (void)x; (void)y;
-}
-
 bool CheckBox::Update(float dt) {
-    float target = (hot_ && enabled_) ? 1.0f : 0.0f;
-    hoverT_ = Approach(hoverT_, target, dt, 18.0f);
-    animating_ = std::abs(hoverT_ - target) > 0.005f;
+    float hoverTarget = (hot_ && enabled_) ? 1.0f : 0.0f;
+    hoverT_ = Approach(hoverT_, hoverTarget, dt, 20.0f);
+
+    float pressTarget = (pressed_ && enabled_) ? 1.0f : 0.0f;
+    pressedT_ = Approach(pressedT_, pressTarget, dt, 30.0f);
+
+    float checkTarget = ((checked_ || indeterminate_) && enabled_) ? 1.0f : 0.0f;
+    checkedT_ = Approach(checkedT_, checkTarget, dt, 20.0f);
+
+    animating_ = std::abs(hoverT_ - hoverTarget) > 0.005f
+        || std::abs(pressedT_ - pressTarget) > 0.005f
+        || std::abs(checkedT_ - checkTarget) > 0.005f;
     return animating_;
 }
 
@@ -40,55 +70,92 @@ void CheckBox::Draw(Renderer& renderer, const Theme& theme, float scale) {
     if (bounds_.IsEmpty()) return;
 
     float s = scale;
+    const bool isOn       = checked_ || indeterminate_;   // 选中/不确定都用 accent 底
+    const bool disabled   = !enabled_;
+    const bool hovering   = hot_ && !disabled;
+    const bool pressing   = pressed_ && !disabled;
+
     Color accent = theme.Accent();
-    Color textCol = theme.TextPrimary();
-    if (!enabled_) textCol = theme.lightMode ? Color(0,0,0,0.36f) : Color(1,1,1,0.36f);
 
-    // 复选框区域（左上）
-    RectF boxRect(bounds_.x, bounds_.y + bounds_.h * 0.5f - kCheckSize * s * 0.5f,
-                  kCheckSize * s, kCheckSize * s);
+    // ===== WinUIonWeb 精确规格 (CheckBox.vue + theme.css) =====
+    // box 20x20, radius 4, border 1px, glyph accent-text (check/indeterminate)
+    // unchecked 框:  fill --ctrl-fill-{default,secondary,tertiary}, stroke --ctrl-strong-stroke
+    // checked/indeterminate 框: fill+stroke --accent-{base,hover,pressed}
+    // disabled: 底 --ctrl-fill-disabled（未选）/ --accent-fill-disabled（选中），边框 --ctrl-strong-stroke-disabled
+    // 文字: --text-primary / --text-disabled(36%)
+    bool light = theme.lightMode;
 
-    // 绘制复选框
-    Color boxBg = accent;
-    Color boxStroke = accent;
-    if (!checked_) {
-        boxBg = Color(0, 0, 0, 0.0f);
-        boxStroke = theme.lightMode ? Color(0, 0, 0, 0.54f) : Color(1, 1, 1, 0.54f);
+    Color fillDefault = light ? Color(1, 1, 1, 0.70f) : Color(1, 1, 1, 0.0605f);
+    Color fillHover   = light ? Color(0.976f, 0.976f, 0.976f, 0.50f) : Color(1, 1, 1, 0.0837f);
+    Color fillPressed = light ? Color(0.976f, 0.976f, 0.976f, 0.30f) : Color(1, 1, 1, 0.0326f);
+    Color fillDis     = light ? Color(0.976f, 0.976f, 0.976f, 0.30f) : Color(1, 1, 1, 0.0419f);
+    Color strongStroke = light ? Color(0, 0, 0, 0.45f) : Color(1, 1, 1, 0.54f);      // unchecked 边框
+    Color strongStrokeDis = light ? Color(0, 0, 0, 0.22f) : Color(1, 1, 1, 0.16f);   // disabled 边框
+    Color accentHover   = accent.WithAlpha(0.90f);
+    Color accentPressed = accent.WithAlpha(0.80f);
+    Color accentFillDis = light ? Color(0, 0, 0, 0.22f) : Color(1, 1, 1, 0.16f);
+    Color accentText    = light ? Color(1, 1, 1, 1) : Color(0, 0, 0, 1);
+    Color accentTextSec = light ? Color(1, 1, 1, 0.70f) : Color(0, 0, 0, 0.50f);
+    Color textPrimary   = theme.TextPrimary();
+    Color textDis       = light ? Color(0, 0, 0, 0.36f) : Color(1, 1, 1, 0.36f);
+
+    Color boxBg, boxStroke, glyphColor;
+    if (disabled) {
+        boxBg     = isOn ? accentFillDis : fillDis;
+        boxStroke = strongStrokeDis;
+        glyphColor = textDis;
+    } else if (isOn) {
+        // checked / indeterminate：accent 底
+        boxBg = pressing ? accentPressed : (hovering ? accentHover : accent);
+        boxStroke = boxBg;
+        glyphColor = pressing ? accentTextSec : accentText;
+    } else if (pressing) {
+        boxBg = fillPressed;
+        boxStroke = strongStroke;   // WinUIonWeb: unchecked:active stroke 用 disabled 值，视觉接近，保留 strong 更清晰
+        glyphColor = accentText;
+    } else if (hovering) {
+        boxBg = fillHover;
+        boxStroke = strongStroke;
+        glyphColor = accentText;
+    } else {
+        boxBg = fillDefault;
+        boxStroke = strongStroke;
+        glyphColor = accentText;
     }
 
-    // 复选框背景
+    // ---- 框（20x20 圆角矩形）----
+    float size = kCheckSize * s;
+    float bx = bounds_.x;
+    float by = bounds_.y + (bounds_.h - size) * 0.5f;
+    RectF boxRect(bx, by, size, size);
     renderer.FillRoundedRect(boxRect, kCheckRadius * s, boxBg);
-    // 复选框边框
     renderer.StrokeRoundedRect(boxRect, kCheckRadius * s, 1.0f * s, boxStroke);
 
-    // 勾选标记（如果选中）
-    if (checked_) {
-        // 勾号
-        float margin = kCheckSize * s * 0.2f;
-        float checkSize = kCheckSize * s * 0.6f;
-        // 简单绘制：两条线
-        Color checkColor = checked_ ? Color(1, 1, 1, 1.0f) : boxStroke;
-        renderer.DrawLine(
-            boxRect.x + margin,
-            boxRect.y + boxRect.h * 0.5f,
-            boxRect.x + boxRect.h * 0.35f,
-            boxRect.y + boxRect.h * 0.75f,
-            2.0f * s, checkColor);
-        renderer.DrawLine(
-            boxRect.x + boxRect.h * 0.35f,
-            boxRect.y + boxRect.h * 0.75f,
-            boxRect.x + boxRect.w * 0.8f,
-            boxRect.y + margin,
-            2.0f * s, checkColor);
+    // ---- glyph（对勾 / 横杠），用 checkedT_ 做淡入 ----
+    float glyphAlpha = EaseOut(checkedT_);
+    if (isOn && glyphAlpha > 0.001f) {
+        Color gc = glyphColor.WithAlpha(glyphAlpha);
+        float cx = bx + size * 0.5f;
+        float cy = by + size * 0.5f;
+        if (indeterminate_) {
+            // 横杠（indeterminate）
+            float hw = size * 0.30f;
+            renderer.DrawLine(cx - hw, cy, cx + hw, cy, 2.0f * s, gc);
+        } else {
+            // 对勾（两段线）
+            renderer.DrawLine(cx - size * 0.28f, cy + size * 0.02f,
+                              cx - size * 0.08f, cy + size * 0.20f, 2.0f * s, gc);
+            renderer.DrawLine(cx - size * 0.08f, cy + size * 0.20f,
+                              cx + size * 0.28f, cy - size * 0.18f, 2.0f * s, gc);
+        }
     }
 
-    // 文字：单行垂直居中 + 左对齐
-    RectF textRect(
-        bounds_.x + kCheckSize * s + kCheckPad * s,
-        bounds_.y,
-        bounds_.w - (kCheckSize * s + kCheckPad * s),
-        bounds_.h);
-
+    // ---- 文字 ----
+    Color textCol = disabled ? textDis : textPrimary;
+    RectF textRect(bounds_.x + size + kCheckPad * s,
+                   bounds_.y,
+                   bounds_.w - (size + kCheckPad * s),
+                   bounds_.h);
     renderer.DrawText(text_,
                       textRect.x, textRect.y, textRect.w, textRect.h,
                       L"Segoe UI", kCheckFontSize * s,

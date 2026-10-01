@@ -98,6 +98,17 @@ protected:
         chkB_.SetText(L"CheckBox checked");
         chkB_.SetChecked(true);
         chkB_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
+        ly += kRowHeight * s;
+
+        chkC_.SetText(L"CheckBox indeterminate");
+        chkC_.SetTristate(true);
+        chkC_.SetIndeterminate(true);
+        chkC_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
+        ly += kRowHeight * s;
+
+        chkD_.SetText(L"CheckBox disabled");
+        chkD_.SetEnabled(false);
+        chkD_.SetBounds(RectF(lx, ly, colW, kRowHeight * s));
         ly += kRowHeight * s + kGroupGap * s;
 
         // ToggleSwitches
@@ -195,6 +206,8 @@ protected:
         animating |= btnDisabled_.Update(dt);
         animating |= chkA_.Update(dt);
         animating |= chkB_.Update(dt);
+        animating |= chkC_.Update(dt);
+        animating |= chkD_.Update(dt);
         animating |= toggleA_.Update(dt);
         animating |= toggleB_.Update(dt);
         animating |= toggleC_.Update(dt);
@@ -227,6 +240,8 @@ protected:
         // CheckBoxes
         chkA_.Draw(*this, theme, s);
         chkB_.Draw(*this, theme, s);
+        chkC_.Draw(*this, theme, s);
+        chkD_.Draw(*this, theme, s);
 
         // Toggles
         toggleA_.Draw(*this, theme, s);
@@ -259,6 +274,8 @@ protected:
         btnDisabled_.OnMouseMove(x, y);
         chkA_.OnMouseMove(x, y);
         chkB_.OnMouseMove(x, y);
+        chkC_.OnMouseMove(x, y);
+        chkD_.OnMouseMove(x, y);
         toggleA_.OnMouseMove(x, y);
         toggleB_.OnMouseMove(x, y);
         toggleC_.OnMouseMove(x, y);
@@ -275,6 +292,8 @@ protected:
         btnDisabled_.OnMouseLeave();
         chkA_.OnMouseLeave();
         chkB_.OnMouseLeave();
+        chkC_.OnMouseLeave();
+        chkD_.OnMouseLeave();
         toggleA_.OnMouseLeave();
         toggleB_.OnMouseLeave();
         toggleC_.OnMouseLeave();
@@ -289,6 +308,10 @@ protected:
         btnAccent_.OnMouseDown(x, y);
         btnSubtle_.OnMouseDown(x, y);
         btnDisabled_.OnMouseDown(x, y);
+        chkA_.OnMouseDown(x, y);
+        chkB_.OnMouseDown(x, y);
+        chkC_.OnMouseDown(x, y);
+        chkD_.OnMouseDown(x, y);
         radioA_.OnMouseDown(x, y);
         radioB_.OnMouseDown(x, y);
         slider_.OnMouseDown(x, y);
@@ -301,6 +324,8 @@ protected:
         btnDisabled_.OnMouseUp(x, y);
         chkA_.OnMouseUp(x, y);
         chkB_.OnMouseUp(x, y);
+        chkC_.OnMouseUp(x, y);
+        chkD_.OnMouseUp(x, y);
         toggleA_.OnMouseUp(x, y);
         toggleB_.OnMouseUp(x, y);
         toggleC_.OnMouseUp(x, y);
@@ -334,6 +359,8 @@ private:
 
     CheckBox chkA_;
     CheckBox chkB_;
+    CheckBox chkC_;
+    CheckBox chkD_;
 
     ToggleSwitch toggleA_;
     ToggleSwitch toggleB_;
