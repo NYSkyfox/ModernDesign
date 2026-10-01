@@ -140,7 +140,8 @@ private:
     float bodyH_ = 0.0f;      // 正文换行后高度（DIP）
     std::vector<std::wstring> bodyLines_;
 
-    Button primaryBtn_, secondaryBtn_, closeBtn_;
+    // buttons 在 ModernDesign::Controls 命名空间下（历史遗留，见 controls/Button.h）
+    Controls::Button primaryBtn_, secondaryBtn_, closeBtn_;
     RectF  primaryRect_, secondaryRect_, closeRect_;   // 三个按钮的最终位置（空=不可见）
 
     // 动画

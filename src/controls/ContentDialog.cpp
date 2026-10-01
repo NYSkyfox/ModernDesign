@@ -7,6 +7,9 @@
 
 namespace ModernDesign {
 
+using Controls::Button;
+using Controls::ButtonVariant;
+
 namespace {
 
 constexpr const wchar_t* kFace = L"Segoe UI";
