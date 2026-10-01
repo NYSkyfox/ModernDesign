@@ -45,14 +45,17 @@ protected:
         float s = DpiScale();
         nav_.SetScale(s);
         nav_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
-        nav_.SetPaneTitle(L"Modern Design");
-        nav_.AddItem({ L"Home", 0, false });
-        nav_.AddItem({ L"Expander", 1, false });
-        nav_.SetSettings(L"Settings");
 
         static bool bound = false;
         if (!bound) {
             bound = true;
+            // 菜单项/标题只绑定一次（避免每次 OnLayout 重复 AddItem）
+            nav_.SetPaneTitle(L"Modern Design");
+            nav_.AddItem({ L"Home", 0, false });
+            nav_.AddItem({ L"Expander", 1, false });
+            nav_.SetSettings(L"Settings");
+            nav_.SetSelectedIndex(1);   // [临时] 默认停 Expander 页，便于 CI 截图验证
+            current_ = 1;               // [临时]
             nav_.SetSelectionCallback([this](int i) { current_ = i; Invalidate(); });
 
             // Expander 页面：内容区放一个 ToggleSwitch
