@@ -47,6 +47,7 @@ private:
     bool dragging_ = false;
     bool hot_ = false;
     float hoverT_ = 0.0f;
+    float pressT_ = 0.0f;
 };
 
 } // namespace ModernDesign
