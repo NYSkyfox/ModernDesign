@@ -79,6 +79,10 @@ def main() -> int:
         if abs(w - h) > 0.001:
             print(f"!! {label}: viewBox 非正方形 {w}x{h}", file=sys.stderr)
             return 1
+        if abs(w - round(w)) > 0.001:
+            print(f"!! {label}: viewBox 非整数 {w}", file=sys.stderr)
+            return 1
+        w = float(round(w))
         ds = re.findall(r'<path[^>]*?\sd="([^"]+)"', svg)
         if len(ds) != 1:
             print(f"!! {label}: 期望 1 个 path，实得 {len(ds)}", file=sys.stderr)
@@ -108,7 +112,7 @@ def main() -> int:
         out.append(f"// {path}.svg  ({vb:g}x{vb:g})")
         out.append(f"inline constexpr IconPath k{name}{{")
         out.append(wrap_literal(d, "    "))
-        out.append(f"    , {vb:g}f }};")
+        out.append(f"    , {int(vb)}.0f }};")
         out.append("")
     out.append("} // namespace FluentIconData")
     out.append("} // namespace ModernDesign")
