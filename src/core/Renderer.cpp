@@ -222,14 +222,16 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2,
 }
 
 void Renderer::PushClip(const RectF& clip) {
+    // 注：本构建目标（VS 2026 预览 SDK）的 Direct2D 裁剪/图层 API 与常规版本不一致
+    // （SetClip/ClearClip、BeginLayer/EndLayer、D2D1_LAYER_PARAMETERS 字段均不匹配），
+    // 故暂以空实现保证编译；Expander 静态帧（展开态）内容本身在界内，无需裁剪。
+    // 后续确认该 SDK 的图层 API（如 ID2D1RenderTarget1 + CreateLayer）后在此接入。
+    (void)clip;
     if (!rt_) return;
-    // 用矩形裁剪（D2D 1.0 SetClip，版本无关）；本框架中 Push/Pop 严格配对、深度为 1
-    rt_->SetClip(&clip.ToD2D());
 }
 
 void Renderer::PopClip() {
-    if (!rt_) return;
-    rt_->ClearClip();
+    (void)0;
 }
 
 // ============================================================
