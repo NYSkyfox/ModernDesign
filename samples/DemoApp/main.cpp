@@ -11,6 +11,7 @@
 // ============================================================
 
 #include "pch.h"
+#include <shellapi.h>
 #include "app/App.h"
 #include "controls/NavigationView.h"
 #include "controls/Button.h"
@@ -146,6 +147,19 @@ protected:
             homeProg_.SetProgress(0.6f);
             homeProg_.SetBounds(RectF(x, y, ContW(), 12.0f * s));
             y += 12.0f * s + kGroupGap * s;
+
+            // HyperlinkButton：链接按钮（accent 文字，宽度贴合内容）
+            homeLinkA_.SetText(L"Learn more about Modern Design");
+            homeLinkA_.SetNavigateUri(L"https://github.com/NYSkyfox/ModernDesign");
+            homeLinkA_.SetClickCallback([] {
+                ShellExecuteW(nullptr, L"open", L"https://github.com/NYSkyfox/ModernDesign",
+                              nullptr, nullptr, SW_SHOWNORMAL);
+            });
+            homeLinkB_.SetText(L"Unavailable link");
+            homeLinkB_.SetEnabled(false);
+            homeLinkA_.SetBounds(RectF(x, y, homeLinkA_.MeasureWidth(*this, s), kRowHeight * s));
+            homeLinkB_.SetBounds(RectF(x + 28.0f * s, y, homeLinkB_.MeasureWidth(*this, s), kRowHeight * s));
+            y += kRowHeight * s + kGroupGap * s;
 
             // 浮出层触发按钮（Flyout / MenuFlyout / ToolTip）
             flyBtn_.SetBounds(RectF(x, y, 118.0f * s, kRowHeight * s));
@@ -433,6 +447,7 @@ protected:
         anim |= homeChk_.Update(dt); anim |= homeTog_.Update(dt);
         anim |= homeRadioA_.Update(dt); anim |= homeRadioB_.Update(dt);
         anim |= homeSlider_.Update(dt);
+        anim |= homeLinkA_.Update(dt); anim |= homeLinkB_.Update(dt);
         anim |= expanderA_.Update(dt); anim |= expanderB_.Update(dt); anim |= expanderC_.Update(dt);
         anim |= expAToggle_.Update(dt); anim |= expBToggle_.Update(dt); anim |= expCToggle_.Update(dt);
         anim |= expHeaderBtn_.Update(dt);
@@ -459,6 +474,7 @@ protected:
             homeChk_.Draw(*this, theme, s); homeTog_.Draw(*this, theme, s);
             homeRadioA_.Draw(*this, theme, s); homeRadioB_.Draw(*this, theme, s);
             homeSlider_.Draw(*this, theme, s); homeProg_.Draw(*this, theme, s);
+            homeLinkA_.Draw(*this, theme, s); homeLinkB_.Draw(*this, theme, s);
             flyBtn_.Draw(*this, theme, s); menuBtn_.Draw(*this, theme, s);
             tipHost_.Draw(*this, theme, s);
         } else if (current_ == 1) {
@@ -493,6 +509,7 @@ protected:
             homeChk_.OnMouseMove(x, y); homeTog_.OnMouseMove(x, y);
             homeRadioA_.OnMouseMove(x, y); homeRadioB_.OnMouseMove(x, y);
             homeSlider_.OnMouseMove(x, y);
+            homeLinkA_.OnMouseMove(x, y); homeLinkB_.OnMouseMove(x, y);
             flyBtn_.OnMouseMove(x, y); menuBtn_.OnMouseMove(x, y);
             tipHost_.OnMouseMove(x, y);
         } else if (current_ == 1) {
@@ -514,6 +531,7 @@ protected:
             homeChk_.OnMouseLeave(); homeTog_.OnMouseLeave();
             homeRadioA_.OnMouseLeave(); homeRadioB_.OnMouseLeave();
             homeSlider_.OnMouseLeave();
+            homeLinkA_.OnMouseLeave(); homeLinkB_.OnMouseLeave();
             flyBtn_.OnMouseLeave(); menuBtn_.OnMouseLeave(); tipHost_.OnMouseLeave();
         } else if (current_ == 1) {
             expanderA_.OnMouseLeave(); expanderB_.OnMouseLeave(); expanderC_.OnMouseLeave();
@@ -531,6 +549,7 @@ protected:
             homeChk_.OnMouseDown(x, y); homeTog_.OnMouseDown(x, y);
             homeRadioA_.OnMouseDown(x, y); homeRadioB_.OnMouseDown(x, y);
             homeSlider_.OnMouseDown(x, y);
+            homeLinkA_.OnMouseDown(x, y); homeLinkB_.OnMouseDown(x, y);
             flyBtn_.OnMouseDown(x, y); menuBtn_.OnMouseDown(x, y); tipHost_.OnMouseDown(x, y);
         } else if (current_ == 1) {
             expanderA_.OnMouseDown(x, y); expanderB_.OnMouseDown(x, y); expanderC_.OnMouseDown(x, y);
@@ -548,6 +567,7 @@ protected:
             homeChk_.OnMouseUp(x, y); homeTog_.OnMouseUp(x, y);
             homeRadioA_.OnMouseUp(x, y); homeRadioB_.OnMouseUp(x, y);
             homeSlider_.OnMouseUp(x, y);
+            homeLinkA_.OnMouseUp(x, y); homeLinkB_.OnMouseUp(x, y);
             flyBtn_.OnMouseUp(x, y); menuBtn_.OnMouseUp(x, y); tipHost_.OnMouseUp(x, y);
         } else if (current_ == 1) {
             expanderA_.OnMouseUp(x, y); expanderB_.OnMouseUp(x, y); expanderC_.OnMouseUp(x, y);
@@ -599,6 +619,7 @@ private:
     RadioButton homeRadioA_, homeRadioB_;
     Slider homeSlider_;
     ProgressBar homeProg_;
+    HyperlinkButton homeLinkA_, homeLinkB_;
 
     // Expander（三种示例：图标+描述 / HeaderControls / Up 方向）
     Expander expanderA_, expanderB_, expanderC_;

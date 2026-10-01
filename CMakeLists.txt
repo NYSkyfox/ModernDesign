@@ -51,6 +51,7 @@ set(MD_APP_SOURCES
 
 set(MD_CONTROL_SOURCES
     src/controls/Button.cpp
+    src/controls/HyperlinkButton.cpp
     src/controls/CheckBox.cpp
     src/controls/ToggleSwitch.cpp
     src/controls/RadioButton.cpp
