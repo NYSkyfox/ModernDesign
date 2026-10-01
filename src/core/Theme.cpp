@@ -16,6 +16,13 @@ void Theme::SetLightMode(bool light) {
         textSecondaryR = 0.376f; textSecondaryG = 0.369f; textSecondaryB = 0.365f;
         textDisabledR = textDisabledG = textDisabledB = 0.0f;
         textDisabledA = 0.36f;
+        // ContentDialog（浅色）
+        dialogBgR = dialogBgG = dialogBgB = 0.953f;          // #F3F3F3
+        dialogContentBgR = dialogContentBgG = dialogContentBgB = 1.0f;  // #FFFFFF
+        dialogContentBgA = 1.0f;
+        dialogCmdBgR = dialogCmdBgG = dialogCmdBgB = 0.953f; // #F3F3F3
+        dialogBorderR = dialogBorderG = dialogBorderB = 0.459f; // rgba(117,117,117,.4)
+        dialogBorderA = 0.4f;
         navContentBgR = navContentBgG = navContentBgB = 0.976f;  // #F9F9F9
         textOnAccentR = textOnAccentG = textOnAccentB = 1.0f;
         // accent 不在此处重置：它由 SetAccent 独立管理（优先取 Windows 强调色）
@@ -46,6 +53,13 @@ void Theme::ApplyDark() {
     textSecondaryR = 0.8f; textSecondaryG = 0.8f; textSecondaryB = 0.8f;
     textDisabledR = textDisabledG = textDisabledB = 1.0f;   // rgba(255,255,255,.36)
     textDisabledA = 0.36f;
+    // ContentDialog（深色）
+    dialogBgR = dialogBgG = dialogBgB = 0.1725f;           // #2C2C2C
+    dialogContentBgR = dialogContentBgG = dialogContentBgB = 0.169f; // rgba(43,43,43,0)
+    dialogContentBgA = 0.0f;
+    dialogCmdBgR = dialogCmdBgG = dialogCmdBgB = 0.1255f;  // #202020
+    dialogBorderR = dialogBorderG = dialogBorderB = 0.459f; // rgba(117,117,117,.4)
+    dialogBorderA = 0.4f;
     navContentBgR = navContentBgG = navContentBgB = 0.157f;  // #282828
     textOnAccentR = textOnAccentG = textOnAccentB = 1.0f;    // #FFFFFF
     // accent 保持不变

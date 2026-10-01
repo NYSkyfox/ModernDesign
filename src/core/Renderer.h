@@ -62,6 +62,19 @@ public:
     void PushClip(const RectF& clip);
     void PopClip();
 
+    // ---- 变换作用域（成对使用）----
+    // 围绕 (cx,cy) 等比缩放的绘制作用域；Push 内部可正常画形状/文本，
+    // PopTransform 会恢复调用前的变换。注意：不要与 PushClip 交叉嵌套
+    // （裁剪矩形是在当前变换空间下解释的）。
+    void PushScale(float scale, float cx, float cy);
+    void PopTransform();
+
+    // ---- 阴影 ----
+    // 圆角矩形投影：offsetY 向下偏移、blur 模糊半径、alpha 峰值不透明度。
+    // 用多层递增圆角矩形近似高斯模糊（无渐变画刷依赖）。
+    void FillDropShadow(const RectF& rect, float radius, float offsetY,
+                        float blur, float alpha);
+
     // ---- 文本 ----
     // 在 (x, y, maxW, maxH) 布局框内绘制文本
     //   align  : 水平对齐（默认 LEADING = 左对齐）

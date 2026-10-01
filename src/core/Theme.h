@@ -32,6 +32,26 @@ struct Theme {
     float textDisabledG = 0.0f;
     float textDisabledB = 0.0f;
     float textDisabledA = 0.36f;
+
+    // === ContentDialog 令牌（规格：WinUIonWeb ContentDialog.vue + theme.css）===
+    // 卡片底色：--ContentDialogBackground（#F3F3F3 / #2C2C2C）
+    float dialogBgR = 0.953f;
+    float dialogBgG = 0.953f;
+    float dialogBgB = 0.953f;
+    // 内容区底色：--content-dialog-content-bg（#FFFFFF / rgba(43,43,43,0)）
+    float dialogContentBgR = 1.0f;
+    float dialogContentBgG = 1.0f;
+    float dialogContentBgB = 1.0f;
+    float dialogContentBgA = 1.0f;
+    // 命令区底色：--content-dialog-command-bg（#F3F3F3 / #202020）
+    float dialogCmdBgR = 0.953f;
+    float dialogCmdBgG = 0.953f;
+    float dialogCmdBgB = 0.953f;
+    // 卡片描边：--SurfaceStrokeColorDefaultBrush（rgba(117,117,117,.4)）
+    float dialogBorderR = 0.459f;
+    float dialogBorderG = 0.459f;
+    float dialogBorderB = 0.459f;
+    float dialogBorderA = 0.4f;
     // 卡片背景
     float cardBgR = 1.0f;      // #FFFFFF
     float cardBgG = 1.0f;
@@ -115,6 +135,11 @@ struct Theme {
     Color TextPrimary() const { return Color(textPrimaryR, textPrimaryG, textPrimaryB, 1.0f); }
     Color TextSecondary() const { return Color(textSecondaryR, textSecondaryG, textSecondaryB, 1.0f); }
     Color TextDisabled() const { return Color(textDisabledR, textDisabledG, textDisabledB, textDisabledA); }
+    // ContentDialog
+    Color DialogBg() const { return Color(dialogBgR, dialogBgG, dialogBgB, 1.0f); }
+    Color DialogContentBg() const { return Color(dialogContentBgR, dialogContentBgG, dialogContentBgB, dialogContentBgA); }
+    Color DialogCmdBg() const { return Color(dialogCmdBgR, dialogCmdBgG, dialogCmdBgB, 1.0f); }
+    Color DialogBorder() const { return Color(dialogBorderR, dialogBorderG, dialogBorderB, dialogBorderA); }
     Color TextOnAccent() const { return Color(textOnAccentR, textOnAccentG, textOnAccentB, 1.0f); }
     Color Accent() const { return Color(accentR, accentG, accentB, 1.0f); }
     Color ButtonFill() const { return Color(buttonFillR, buttonFillG, buttonFillB, 1.0f); }

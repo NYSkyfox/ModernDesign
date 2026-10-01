@@ -20,6 +20,7 @@
 #include "controls/ProgressBar.h"
 #include "controls/Slider.h"
 #include "controls/Expander.h"
+#include "controls/ContentDialog.h"
 #include "utils/FluentIcons.h"
 
 using namespace ModernDesign;
@@ -84,6 +85,7 @@ protected:
         });
 
         BindExpanderPage();
+        BindDialog();
 
         // 测试钩子（CI 逐模式出图）：MODERNDESIGN_NAV_MODE = compact | minimal | top
         wchar_t mbuf[64] = {};
@@ -100,6 +102,8 @@ protected:
         float s = DpiScale();
         nav_.SetScale(s);
         nav_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
+        // ContentDialog 覆盖整个客户区（模态遮罩铺满）
+        dialog_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
 
         // ---- Home 页布局 ----
         {
@@ -110,6 +114,8 @@ protected:
             homeBtnAcc_.SetText(L"Accent");
             homeBtnAcc_.SetVariant(ButtonVariant::Accent);
             homeBtnAcc_.SetBounds(RectF(x + 108.0f * s, y, 96.0f * s, kRowHeight * s));
+            // ContentDialog 触发按钮
+            dlgBtn_.SetBounds(RectF(x + 216.0f * s, y, 120.0f * s, kRowHeight * s));
             y += kRowHeight * s + kGroupGap * s;
 
             homeChk_.SetText(L"CheckBox checked");
@@ -274,6 +280,45 @@ protected:
         expCToggle_.SetIsOn(false);
     }
 
+    // ---------- ContentDialog（模态弹窗）----------
+    void BindDialog() {
+        dialog_.SetTitle(L"Delete this file?");
+        dialog_.SetContent(L"This action can't be undone. The file will be removed from this device.");
+        dialog_.SetButtons(L"Delete", L"", L"Cancel");
+        dialog_.SetDefaultButton(ContentDialog::DefaultButton::Primary);
+        dialog_.SetContentDrawHeight(40.0f);   // 内容里那个 CheckBox 的高度
+        dlgChk_.SetText(L"Don't ask me again");
+        dlgChk_.SetChecked(false);
+
+        dialog_.SetContentDrawFn([this](Renderer& r, const Theme& t, float sc, const RectF& box) {
+            dlgChk_.SetBounds(RectF(box.x, box.y + 4.0f * sc, box.w, kRowHeight * sc));
+            dlgChk_.Draw(r, t, sc);
+        });
+        dialog_.SetContentUpdateFn([this](float dt) { return dlgChk_.Update(dt); });
+        dialog_.SetContentInputFn(
+            [this](float px, float py) { dlgChk_.OnMouseMove(px, py); },
+            [this](float px, float py) { dlgChk_.OnMouseDown(px, py); },
+            [this](float px, float py) { dlgChk_.OnMouseUp(px, py); },
+            [this](float, float)       { dlgChk_.OnMouseLeave(); });
+        dialog_.SetResultCallback([this](ContentDialog::Result r) {
+            dlgResult_ = (r == ContentDialog::Result::Primary) ? 1
+                       : (r == ContentDialog::Result::Secondary) ? 2 : 0;
+            Invalidate();
+        });
+
+        dlgBtn_.SetText(L"Show dialog");
+        dlgBtn_.SetVariant(ButtonVariant::Standard);
+        dlgBtn_.SetClickCallback([this] { dialog_.Show(); Invalidate(); });
+
+        // 测试钩子（CI 出图）：MODERNDESIGN_SHOW_DIALOG=1 → 启动即弹出对话框
+        wchar_t dbuf[8] = {};
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_DIALOG", dbuf, 8) > 0 && dbuf[0] == L'1') {
+            nav_.SetSelectedIndex(1);   // 切到 Home 页（触发按钮在那儿）
+            current_ = 0;
+            dialog_.Show();
+        }
+    }
+
     void DrawPageHeader(const std::wstring& title, float s) {
         DrawText(title, ContX(), HeadY(), ContW(), 44.0f * s,
                  L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
@@ -292,6 +337,8 @@ protected:
         anim |= expAToggle_.Update(dt); anim |= expBToggle_.Update(dt); anim |= expCToggle_.Update(dt);
         anim |= expHeaderBtn_.Update(dt);
         anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt); anim |= setTogC_.Update(dt);
+        anim |= dlgBtn_.Update(dt);
+        anim |= dialog_.Update(dt);   // 弹窗动画 + 内容（CheckBox）
         return anim;
     }
 
@@ -305,6 +352,7 @@ protected:
         if (current_ <= 0) {
             DrawPageHeader(L"Home", s);
             homeBtnStd_.Draw(*this, theme, s); homeBtnAcc_.Draw(*this, theme, s);
+            dlgBtn_.Draw(*this, theme, s);
             homeChk_.Draw(*this, theme, s); homeTog_.Draw(*this, theme, s);
             homeRadioA_.Draw(*this, theme, s); homeRadioB_.Draw(*this, theme, s);
             homeSlider_.Draw(*this, theme, s); homeProg_.Draw(*this, theme, s);
@@ -318,9 +366,13 @@ protected:
             setTogA_.Draw(*this, theme, s); setTogB_.Draw(*this, theme, s);
             setTogC_.Draw(*this, theme, s);
         }
+
+        // ContentDialog：模态浮层，必须最后画（盖住导航栏与页面）
+        dialog_.Draw(*this, theme, s);
     }
 
     void OnMouseMove(float x, float y) override {
+        if (dialog_.OnMouseMove(x, y)) return;   // 模态：弹窗吃掉一切
         nav_.OnMouseMove(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseMove(x, y); homeBtnAcc_.OnMouseMove(x, y);
@@ -334,6 +386,7 @@ protected:
         }
     }
     void OnMouseLeave() override {
+        if (dialog_.IsOpen()) { dialog_.OnMouseLeave(); return; }
         nav_.OnMouseLeave();
         if (current_ <= 0) {
             homeBtnStd_.OnMouseLeave(); homeBtnAcc_.OnMouseLeave();
@@ -347,6 +400,7 @@ protected:
         }
     }
     void OnMouseDown(float x, float y) override {
+        if (dialog_.OnMouseDown(x, y)) return;
         nav_.OnMouseDown(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseDown(x, y); homeBtnAcc_.OnMouseDown(x, y);
@@ -360,6 +414,7 @@ protected:
         }
     }
     void OnMouseUp(float x, float y) override {
+        if (dialog_.OnMouseUp(x, y)) return;
         nav_.OnMouseUp(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseUp(x, y); homeBtnAcc_.OnMouseUp(x, y);
@@ -376,7 +431,10 @@ protected:
     void OnThemeChanged() override {
         setTogA_.SetIsOn(!GetTheme().lightMode);
     }
-    void OnKeyDown(int vk) override { if (vk == VK_SPACE) ToggleTheme(); }
+    void OnKeyDown(int vk) override {
+        if (dialog_.OnKeyDown(vk)) return;
+        if (vk == VK_SPACE) ToggleTheme();
+    }
 
 private:
     int current_ = 0;
@@ -399,6 +457,12 @@ private:
 
     // Settings
     ToggleSwitch setTogA_, setTogB_, setTogC_;
+
+    // ContentDialog（模态弹窗）+ 触发按钮 + 弹窗内容里的 CheckBox
+    ContentDialog dialog_;
+    Button dlgBtn_;
+    CheckBox dlgChk_;
+    int dlgResult_ = 0;   // 0=None 1=Primary 2=Secondary
 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {

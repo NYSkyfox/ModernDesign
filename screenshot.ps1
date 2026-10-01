@@ -10,7 +10,9 @@ param(
     # 初始导航模式（传给 App 的 MODERNDESIGN_NAV_MODE）：""/left | compact | minimal | top
     [string]$NavMode = "",
     # 输出文件名
-    [string]$OutName = "screenshot.png"
+    [string]$OutName = "screenshot.png",
+    # 启动即弹出 ContentDialog（用于给弹窗出图）
+    [switch]$ShowDialog
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
@@ -40,6 +42,9 @@ $env:MODERNDESIGN_NO_NOREDIRECT = "1"
 # 初始导航模式（用于逐模式出图：Left / LeftCompact / LeftMinimal / Top）
 if ($NavMode -ne "") { $env:MODERNDESIGN_NAV_MODE = $NavMode }
 else { Remove-Item Env:\MODERNDESIGN_NAV_MODE -ErrorAction SilentlyContinue }
+# 启动即弹出弹窗（用于给 ContentDialog 出图）
+if ($ShowDialog) { $env:MODERNDESIGN_SHOW_DIALOG = "1" }
+else { Remove-Item Env:\MODERNDESIGN_SHOW_DIALOG -ErrorAction SilentlyContinue }
 
 $proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
 

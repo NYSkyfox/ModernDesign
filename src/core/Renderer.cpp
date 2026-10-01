@@ -232,6 +232,42 @@ void Renderer::PopClip() {
     rt_->PopAxisAlignedClip();
 }
 
+void Renderer::PushScale(float scale, float cx, float cy) {
+    if (!rt_) return;
+    D2D1_MATRIX_3X2_F cur{};
+    rt_->GetTransform(&cur);
+    // 围绕 (cx,cy) 缩放：p' = (p - c) * s + c = p * s + c * (1 - s)
+    const float dx = cx * (1.0f - scale);
+    const float dy = cy * (1.0f - scale);
+    D2D1::Matrix3x2F m(
+        cur.m11 * scale, cur.m12 * scale,
+        cur.m21 * scale, cur.m22 * scale,
+        cur.dx * scale + dx, cur.dy * scale + dy);
+    rt_->SetTransform(m);
+}
+
+void Renderer::PopTransform() {
+    if (!rt_) return;
+    rt_->SetTransform(D2D1::Matrix3x2F::Identity());
+}
+
+void Renderer::FillDropShadow(const RectF& rect, float radius, float offsetY,
+                              float blur, float alpha) {
+    if (!rt_ || alpha <= 0.001f) return;
+    const int   N = 14;
+    const float maxGrow = FzMx(0.0f, blur) * 0.5f;
+    for (int i = N - 1; i >= 0; --i) {
+        const float t = static_cast<float>(i) / static_cast<float>(N - 1); // 1=最外圈
+        const float grow = maxGrow * t;
+        const float oy = offsetY * t;
+        const float a = alpha * (1.0f - t) * (1.0f - t) * 4.0f / static_cast<float>(N);
+        if (a <= 0.002f) continue;
+        RectF rr(rect.x - grow, rect.y - grow + oy,
+                 rect.w + grow * 2.0f, rect.h + grow * 2.0f);
+        FillRoundedRect(rr, radius + grow, Color(0.0f, 0.0f, 0.0f, a));
+    }
+}
+
 // ============================================================
 // 矢量图标路径（SVG path 子集：M/L/H/V/C/Z）
 //
