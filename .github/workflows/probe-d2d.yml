@@ -36,8 +36,8 @@ jobs:
         run: |
           $out = New-Object System.Text.StringBuilder
           $hdrs = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Recurse -File -Include d2d1.h, d2d1_1.h, d2d1_2.h -ErrorAction SilentlyContinue
-          # 裁剪 / 图层 / 几何 / 工厂 相关关键字
-          $pat = 'SetClip|ClearClip|CreateLayer|BeginLayer|EndLayer|PushLayer|PopLayer|LayerParameters|LayerOptions|D2D1_LAYER|ID2D1Layer|CreateGeometry|CreateGeometryGroup|CreateRectangle|ID2D1RenderTarget|ID2D1Factory|D2D1_RENDER_TARGET'
+          # 裁剪 / 图层 / 几何 / 工厂 相关关键字（含 D2D1.0 真实的 AxisAlignedClip API）
+          $pat = 'SetClip|ClearClip|AxisAlignedClip|CreateLayer|BeginLayer|EndLayer|PushLayer|PopLayer|LayerParameters|LayerOptions|D2D1_LAYER|ID2D1Layer|CreateGeometry|CreateGeometryGroup|CreateRectangleGeometry|SetTransform|ID2D1RenderTarget|ID2D1Factory|D2D1_RENDER_TARGET'
           foreach ($h in $hdrs) {
             [void]$out.AppendLine("")
             [void]$out.AppendLine("################  $($h.FullName)  ################")
@@ -85,6 +85,31 @@ jobs:
           $fi = Get-Item probe_d2d_interfaces.txt
           Write-Host "probe_d2d_interfaces.txt size = $($fi.Length) bytes"
 
+      - name: Dump FULL interface bodies (clip/layer methods)
+        shell: pwsh
+        run: |
+          $out = New-Object System.Text.StringBuilder
+          $hdrs = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Recurse -File -Include d2d1.h, d2d1_1.h, d2d1_2.h -ErrorAction SilentlyContinue
+          $targets = @('ID2D1RenderTarget1','ID2D1RenderTarget2','ID2D1RenderTarget3','ID2D1HwndRenderTarget','ID2D1DeviceContext','ID2D1RenderTarget')
+          foreach ($h in $hdrs) {
+            $lines = Get-Content $h.FullName
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+              foreach ($t in $targets) {
+                if ($lines[$i] -match ("interface\s+DX_DECLARE_INTERFACE\(.*\)\s+" + $t + "\s*:")) {
+                  $j = $i + 1
+                  while ($j -lt $lines.Count -and $lines[$j] -notmatch '^};') { $j++ }
+                  [void]$out.AppendLine("")
+                  [void]$out.AppendLine("############ FULL $t  ($($h.Name) L$($i+1)) ############")
+                  for ($k = $i; $k -le [Math]::Min($j, $lines.Count - 1); $k++) {
+                    [void]$out.AppendLine($lines[$k])
+                  }
+                }
+              }
+            }
+          }
+          [System.IO.File]::WriteAllText('probe_d2d_full.txt', $out.ToString(), [System.Text.Encoding]::UTF8)
+          Write-Host "probe_d2d_full.txt size = $((Get-Item probe_d2d_full.txt).Length) bytes"
+
       - name: Show head of probe to console
         shell: pwsh
         run: |
@@ -99,5 +124,6 @@ jobs:
           path: |
             probe_d2d.txt
             probe_d2d_interfaces.txt
+            probe_d2d_full.txt
           retention-days: 14
           if-no-files-found: warn

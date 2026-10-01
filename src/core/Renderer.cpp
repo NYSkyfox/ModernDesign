@@ -222,16 +222,14 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2,
 }
 
 void Renderer::PushClip(const RectF& clip) {
-    // 注：本构建目标（VS 2026 预览 SDK）的 Direct2D 裁剪/图层 API 与常规版本不一致
-    // （SetClip/ClearClip、BeginLayer/EndLayer、D2D1_LAYER_PARAMETERS 字段均不匹配），
-    // 故暂以空实现保证编译；Expander 静态帧（展开态）内容本身在界内，无需裁剪。
-    // 后续确认该 SDK 的图层 API（如 ID2D1RenderTarget1 + CreateLayer）后在此接入。
-    (void)clip;
     if (!rt_) return;
+    // D2D1 矩形裁剪：PushAxisAlignedClip / PopAxisAlignedClip（DIP 坐标；本框架不设 D2D 变换，故与绘制坐标一致）
+    rt_->PushAxisAlignedClip(clip.ToD2D(), D2D1_ANTIALIAS_MODE_ALIASED);
 }
 
 void Renderer::PopClip() {
-    (void)0;
+    if (!rt_) return;
+    rt_->PopAxisAlignedClip();
 }
 
 // ============================================================
