@@ -280,11 +280,13 @@ void ContentDialog::Draw(Renderer& renderer, const Theme& theme, float scale) {
         ty += kBodyLine * s;
     }
 
-    // ---- 4) 自定义内容（排在正文下方，占用内容区去掉 padding 的剩余空间）----
+    // ---- 4) 自定义内容（排在 Title 区与正文下方）----
     if (contentDraw_) {
-        const RectF inner(card_.x + pad, card_.y + pad + bodyH_,
+        const float titleBlock = title_.empty() ? 0.0f : (kTitleLine + kTitleGap) * s;
+        const float top = card_.y + pad + titleBlock + bodyH_;
+        const RectF inner(card_.x + pad, top,
                           FzMx(0.0f, card_.w - pad2),
-                          FzMx(0.0f, contentBox_.h - pad2 - bodyH_));
+                          FzMx(0.0f, contentBox_.h - pad2 - titleBlock - bodyH_));
         contentDraw_(renderer, theme, s, inner);
     }
 
