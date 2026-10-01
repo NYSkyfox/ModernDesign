@@ -6,6 +6,12 @@
 #     官方专为 D2D/D3D/DirectComposition 窗口设计的抓取方式。
 #   - 内嵌 C# 只做 user32 的 P/Invoke（不引用 System.Drawing，避免 Add-Type 缺程序集）；
 #     位图创建 / 取 DC / 保存 全部在 PowerShell 侧用 [System.Drawing.*] 完成。
+param(
+    # 初始导航模式（传给 App 的 MODERNDESIGN_NAV_MODE）：""/left | compact | minimal | top
+    [string]$NavMode = "",
+    # 输出文件名
+    [string]$OutName = "screenshot.png"
+)
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
@@ -31,6 +37,9 @@ Write-Host "exe: $exe"
 # 关闭 WS_EX_NOREDIRECTIONBITMAP，让 D2D 走 GDI 重定向路径 → 截图可捕获客户区
 # （CI 是 WARP 无 GPU，Acrylic blur 本就不生效，关闭无损失）
 $env:MODERNDESIGN_NO_NOREDIRECT = "1"
+# 初始导航模式（用于逐模式出图：Left / LeftCompact / LeftMinimal / Top）
+if ($NavMode -ne "") { $env:MODERNDESIGN_NAV_MODE = $NavMode }
+else { Remove-Item Env:\MODERNDESIGN_NAV_MODE -ErrorAction SilentlyContinue }
 
 $proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
 
@@ -111,7 +120,7 @@ for ($i = 0; $i -lt 24; $i++) {
     if ($hwnd -ne [IntPtr]::Zero) { break }
 }
 
-$shotPath = Join-Path $PWD "screenshot.png"
+$shotPath = Join-Path $PWD $OutName
 
 if ($hwnd -eq [IntPtr]::Zero) {
     Write-Host "!!! 主窗口未出现 —— 打印诊断:"

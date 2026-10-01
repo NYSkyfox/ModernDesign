@@ -22,6 +22,16 @@ struct Theme {
     float contentBgR = 1.0f;   // #FFFFFF
     float contentBgG = 1.0f;
     float contentBgB = 1.0f;
+    // NavigationView 内容区背景
+    // 规格：--NavigationViewContentBackground 浅色 #F9F9F9 / 深色 #282828
+    float navContentBgR = 0.976f;  // #F9F9F9
+    float navContentBgG = 0.976f;
+    float navContentBgB = 0.976f;
+    // 禁用文本（规格：--text-disabled，浅 rgba(0,0,0,.36) / 深 rgba(255,255,255,.36)）
+    float textDisabledR = 0.0f;
+    float textDisabledG = 0.0f;
+    float textDisabledB = 0.0f;
+    float textDisabledA = 0.36f;
     // 卡片背景
     float cardBgR = 1.0f;      // #FFFFFF
     float cardBgG = 1.0f;
@@ -99,10 +109,12 @@ struct Theme {
     // 快捷获取 Color
     Color WindowBg() const { return Color(windowBgR, windowBgG, windowBgB, 1.0f); }
     Color ContentBg() const { return Color(contentBgR, contentBgG, contentBgB, 1.0f); }
+    Color NavContentBg() const { return Color(navContentBgR, navContentBgG, navContentBgB, 1.0f); }
     Color CardBg() const { return Color(cardBgR, cardBgG, cardBgB, 1.0f); }
     Color CardBorder() const { return Color(cardBorderR, cardBorderG, cardBorderB, cardBorderA); }
     Color TextPrimary() const { return Color(textPrimaryR, textPrimaryG, textPrimaryB, 1.0f); }
     Color TextSecondary() const { return Color(textSecondaryR, textSecondaryG, textSecondaryB, 1.0f); }
+    Color TextDisabled() const { return Color(textDisabledR, textDisabledG, textDisabledB, textDisabledA); }
     Color TextOnAccent() const { return Color(textOnAccentR, textOnAccentG, textOnAccentB, 1.0f); }
     Color Accent() const { return Color(accentR, accentG, accentB, 1.0f); }
     Color ButtonFill() const { return Color(buttonFillR, buttonFillG, buttonFillB, 1.0f); }

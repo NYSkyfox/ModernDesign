@@ -36,34 +36,68 @@ constexpr float kGroupGap = 26.0f;
 // ============================================================
 class DemoWindow : public App {
 protected:
-    // 内容区（面板右侧）几何
-    float PaneW() const { return nav_.PaneWidthDip() * DpiScale(); }
-    float ContX() const { return PaneW() + kMargin * DpiScale(); }
-    float ContW() const { return FzMx(0.0f, ClientWidth() - PaneW() - kMargin * DpiScale() * 2); }
+    // 内容区几何：完全跟随 NavigationView（Left 折叠时内容区会平滑跟随位移）
+    RectF Cont() const { return nav_.ContentRect(); }
+    float ContX() const { return Cont().x + kMargin * DpiScale(); }
+    float ContW() const { return FzMx(0.0f, Cont().w - kMargin * DpiScale() * 2); }
+    // 页面标题 / 分隔线 / 内容起始 y
+    float HeadY() const { return Cont().y + 24.0f * DpiScale(); }
+    float RuleY() const { return Cont().y + 66.0f * DpiScale(); }
+    float PageTop() const { return Cont().y + 70.0f * DpiScale(); }
 
     void OnLayout() override {
+        BindNav();
+        LayoutPages();
+    }
+
+    // 导航项只绑定一次（避免每次布局重复 AddItem）
+    void BindNav() {
+        static bool bound = false;
+        if (bound) return;
+        bound = true;
+
+        nav_.SetPaneTitle(L"Modern Design");
+        nav_.AddHeader(L"Navigation");
+        nav_.AddItem({ L"Home", 0 });        // idx 1 → Home 页
+        nav_.AddItem({ L"Expander", 1 });    // idx 2 → Expander 页
+        nav_.AddHeader(L"Controls");
+        // 可折叠分组（父项只负责展开/收起，子项共享 Home 页）
+        nav_.AddGroup(L"Basics", 1,
+                      { { L"CheckBox" }, { L"ToggleSwitch" },
+                        { L"Slider" }, { L"RadioButton" } },
+                      true);
+        nav_.AddSeparator();
+        nav_.SetSettings(L"Settings");       // 最后一项 → Settings 页
+
+        pageMap_ = { -1, 0, 1, -1, -1, 0, 0, 0, 0, -1, 2 };
+        nav_.SetSelectedIndex(2);            // 默认停在 Expander 页
+        current_ = 1;
+        nav_.SetSelectionCallback([this](int i) {
+            int p = (i >= 0 && i < static_cast<int>(pageMap_.size())) ? pageMap_[i] : -1;
+            if (p >= 0) { current_ = p; Invalidate(); }
+        });
+
+        BindExpanderPage();
+
+        // 测试钩子（CI 逐模式出图）：MODERNDESIGN_NAV_MODE = compact | minimal | top
+        wchar_t mbuf[64] = {};
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_NAV_MODE", mbuf, 64) > 0) {
+            std::wstring m = mbuf;
+            if (m == L"compact")      nav_.SetDisplayMode(NavigationView::DisplayMode::LeftCompact);
+            else if (m == L"minimal") nav_.SetDisplayMode(NavigationView::DisplayMode::LeftMinimal);
+            else if (m == L"top")     nav_.SetDisplayMode(NavigationView::DisplayMode::Top);
+        }
+    }
+
+    // 每帧调用：面板折叠/展开时内容区宽度平滑变化
+    void LayoutPages() {
         float s = DpiScale();
         nav_.SetScale(s);
         nav_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
 
-        static bool bound = false;
-        if (!bound) {
-            bound = true;
-            // 菜单项/标题只绑定一次（避免每次 OnLayout 重复 AddItem）
-            nav_.SetPaneTitle(L"Modern Design");
-            nav_.AddItem({ L"Home", 0, false });
-            nav_.AddItem({ L"Expander", 1, false });
-            nav_.SetSettings(L"Settings");
-            nav_.SetSelectedIndex(1);   // 默认停在 Expander 页（Demo 主展示页）
-            current_ = 1;
-            nav_.SetSelectionCallback([this](int i) { current_ = i; Invalidate(); });
-
-            BindExpanderPage();
-        }
-
         // ---- Home 页布局 ----
         {
-            float x = ContX(), y = kMargin * s + 70.0f * s; // 标题区下方
+            float x = ContX(), y = PageTop(); // 标题区下方
             homeBtnStd_.SetText(L"Standard");
             homeBtnStd_.SetVariant(ButtonVariant::Standard);
             homeBtnStd_.SetBounds(RectF(x, y, 96.0f * s, kRowHeight * s));
@@ -99,7 +133,7 @@ protected:
 
         // ---- Expander 页布局 ----
         {
-            float x = ContX(), y = kMargin * s + 70.0f * s;
+            float x = ContX(), y = PageTop();
             float w = ContW();              // WinUI 默认 HorizontalAlignment=Stretch → 占满整行
             float pad = 16.0f * s;
             float rowW = w - 2.0f * pad;    // 内容子控件同样占满内容区（开关贴右边缘）
@@ -138,17 +172,30 @@ protected:
 
         // ---- Settings 页布局 ----
         {
-            float x = ContX(), y = kMargin * s + 70.0f * s;
+            float x = ContX(), y = PageTop();
             setTogA_.SetText(L"Dark mode");
             setTogA_.SetIsOn(!GetTheme().lightMode);
             setTogA_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
             y += kRowHeight * s + kRowGap * s;
-            setTogB_.SetText(L"Notifications");
-            setTogB_.SetIsOn(true);
+
+            setTogB_.SetText(L"Compact pane (48px rail)");
+            setTogB_.SetIsOn(nav_.IsCompact());
             setTogB_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            y += kRowHeight * s + kRowGap * s;
+
+            setTogC_.SetText(L"Top navigation");
+            setTogC_.SetIsOn(nav_.GetDisplayMode() == NavigationView::DisplayMode::Top);
+            setTogC_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+
             if (!setBound_) {
                 setBound_ = true;
                 setTogA_.SetChangedCallback([this](bool on) { if (on != !GetTheme().lightMode) ToggleTheme(); });
+                setTogB_.SetChangedCallback([this](bool on) { nav_.SetCompact(on); Invalidate(); });
+                setTogC_.SetChangedCallback([this](bool on) {
+                    nav_.SetDisplayMode(on ? NavigationView::DisplayMode::Top
+                                           : NavigationView::DisplayMode::Left);
+                    Invalidate();
+                });
             }
         }
     }
@@ -228,10 +275,10 @@ protected:
     }
 
     void DrawPageHeader(const std::wstring& title, float s) {
-        DrawText(title, ContX(), kMargin * s + 24.0f * s, ContW(), 44.0f * s,
+        DrawText(title, ContX(), HeadY(), ContW(), 44.0f * s,
                  L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
                  DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-        DrawLine(ContX(), kMargin * s + 66.0f * s, ContX() + ContW(), kMargin * s + 66.0f * s,
+        DrawLine(ContX(), RuleY(), ContX() + ContW(), RuleY(),
                  1.0f * s, GetTheme().CardBorder());
     }
 
@@ -244,13 +291,15 @@ protected:
         anim |= expanderA_.Update(dt); anim |= expanderB_.Update(dt); anim |= expanderC_.Update(dt);
         anim |= expAToggle_.Update(dt); anim |= expBToggle_.Update(dt); anim |= expCToggle_.Update(dt);
         anim |= expHeaderBtn_.Update(dt);
-        anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt);
+        anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt); anim |= setTogC_.Update(dt);
         return anim;
     }
 
     void OnRender() override {
         float s = DpiScale();
         const Theme& theme = GetTheme();
+
+        LayoutPages();   // 面板折叠动画期间内容区需要逐帧重排
 
         nav_.Draw(*this, theme, s); // 画 panel + content 背景
         if (current_ <= 0) {
@@ -267,6 +316,7 @@ protected:
         } else {
             DrawPageHeader(L"Settings", s);
             setTogA_.Draw(*this, theme, s); setTogB_.Draw(*this, theme, s);
+            setTogC_.Draw(*this, theme, s);
         }
     }
 
@@ -280,7 +330,7 @@ protected:
         } else if (current_ == 1) {
             expanderA_.OnMouseMove(x, y); expanderB_.OnMouseMove(x, y); expanderC_.OnMouseMove(x, y);
         } else {
-            setTogA_.OnMouseMove(x, y); setTogB_.OnMouseMove(x, y);
+            setTogA_.OnMouseMove(x, y); setTogB_.OnMouseMove(x, y); setTogC_.OnMouseMove(x, y);
         }
     }
     void OnMouseLeave() override {
@@ -293,7 +343,7 @@ protected:
         } else if (current_ == 1) {
             expanderA_.OnMouseLeave(); expanderB_.OnMouseLeave(); expanderC_.OnMouseLeave();
         } else {
-            setTogA_.OnMouseLeave(); setTogB_.OnMouseLeave();
+            setTogA_.OnMouseLeave(); setTogB_.OnMouseLeave(); setTogC_.OnMouseLeave();
         }
     }
     void OnMouseDown(float x, float y) override {
@@ -306,7 +356,7 @@ protected:
         } else if (current_ == 1) {
             expanderA_.OnMouseDown(x, y); expanderB_.OnMouseDown(x, y); expanderC_.OnMouseDown(x, y);
         } else {
-            setTogA_.OnMouseDown(x, y); setTogB_.OnMouseDown(x, y);
+            setTogA_.OnMouseDown(x, y); setTogB_.OnMouseDown(x, y); setTogC_.OnMouseDown(x, y);
         }
     }
     void OnMouseUp(float x, float y) override {
@@ -319,7 +369,7 @@ protected:
         } else if (current_ == 1) {
             expanderA_.OnMouseUp(x, y); expanderB_.OnMouseUp(x, y); expanderC_.OnMouseUp(x, y);
         } else {
-            setTogA_.OnMouseUp(x, y); setTogB_.OnMouseUp(x, y);
+            setTogA_.OnMouseUp(x, y); setTogB_.OnMouseUp(x, y); setTogC_.OnMouseUp(x, y);
         }
     }
 
@@ -332,6 +382,7 @@ private:
     int current_ = 0;
     bool setBound_ = false;
     NavigationView nav_;
+    std::vector<int> pageMap_;   // 导航项索引 → 页面
 
     // Home
     Button homeBtnStd_, homeBtnAcc_;
@@ -347,7 +398,7 @@ private:
     Button expHeaderBtn_;
 
     // Settings
-    ToggleSwitch setTogA_, setTogB_;
+    ToggleSwitch setTogA_, setTogB_, setTogC_;
 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {

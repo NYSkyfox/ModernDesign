@@ -36,7 +36,10 @@ jobs:
 
       - name: Run + Screenshot
         shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode compact -OutName screenshot_compact.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode top     -OutName screenshot_top.png
 
       - name: Version artifacts (sha7 + timestamp)
         shell: pwsh
@@ -48,6 +51,8 @@ jobs:
                  Select-Object -First 1
           if ($exe) { Copy-Item $exe.FullName "${ver}.exe" -Force }
           if (Test-Path 'screenshot.png') { Copy-Item 'screenshot.png' "${ver}.png" -Force }
+          if (Test-Path 'screenshot_compact.png') { Copy-Item 'screenshot_compact.png' "${ver}_compact.png" -Force }
+          if (Test-Path 'screenshot_top.png')     { Copy-Item 'screenshot_top.png'     "${ver}_top.png" -Force }
           Write-Host "artifact version: ${ver}"
           Get-ChildItem ModernDesign_* -ErrorAction SilentlyContinue |
             Select-Object Name, @{n='KB';e={[math]::Round($_.Length/1KB,1)}} |
