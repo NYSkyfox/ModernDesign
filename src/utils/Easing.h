@@ -44,4 +44,10 @@ inline float EaseNavOverlay(float p) { return CubicBezierY(0.1f, 0.9f, 0.2f, 1.0
 // WinUI 标准缓出：cubic-bezier(0, 0, 0, 1)
 inline float EaseStandardOut(float p) { return CubicBezierY(0.0f, 0.0f, 0.0f, 1.0f, p); }
 
+// ---- Flyout / MenuFlyout ----
+// 打开：cubic-bezier(0.1, 0.9, 0.2, 1)
+inline float EaseFlyoutOpen(float p) { return CubicBezierY(0.1f, 0.9f, 0.2f, 1.0f, p); }
+// 关闭（Flit）：cubic-bezier(0.7, 0, 1, 0.5)
+inline float EaseFlyoutClose(float p) { return CubicBezierY(0.7f, 0.0f, 1.0f, 0.5f, p); }
+
 } // namespace ModernDesign

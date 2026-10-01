@@ -23,6 +23,14 @@ void Theme::SetLightMode(bool light) {
         dialogCmdBgR = dialogCmdBgG = dialogCmdBgB = 0.953f; // #F3F3F3
         dialogBorderR = dialogBorderG = dialogBorderB = 0.459f; // rgba(117,117,117,.4)
         dialogBorderA = 0.4f;
+        // Flyout / MenuFlyout / ToolTip（浅色）
+        flyoutBgR = flyoutBgG = flyoutBgB = 0.988f;   // rgba(252,252,252,.92)
+        flyoutBgA = 0.92f;
+        flyoutBorderR = flyoutBorderG = flyoutBorderB = 0.0f;  // rgba(0,0,0,.06)
+        flyoutBorderA = 0.06f;
+        tipBgA = 0.7176f;                              // 0.92 × 78%
+        dividerR = dividerG = dividerB = 0.0f;         // rgba(0,0,0,.06)
+        dividerA = 0.06f;
         navContentBgR = navContentBgG = navContentBgB = 0.976f;  // #F9F9F9
         textOnAccentR = textOnAccentG = textOnAccentB = 1.0f;
         // accent 不在此处重置：它由 SetAccent 独立管理（优先取 Windows 强调色）
@@ -60,6 +68,14 @@ void Theme::ApplyDark() {
     dialogCmdBgR = dialogCmdBgG = dialogCmdBgB = 0.1255f;  // #202020
     dialogBorderR = dialogBorderG = dialogBorderB = 0.459f; // rgba(117,117,117,.4)
     dialogBorderA = 0.4f;
+    // Flyout / MenuFlyout / ToolTip（深色）
+    flyoutBgR = flyoutBgG = flyoutBgB = 0.1725f;  // rgba(44,44,44,.86)
+    flyoutBgA = 0.86f;
+    flyoutBorderR = flyoutBorderG = flyoutBorderB = 1.0f;  // rgba(255,255,255,.10)
+    flyoutBorderA = 0.10f;
+    tipBgA = 0.6708f;                              // 0.86 × 78%
+    dividerR = dividerG = dividerB = 1.0f;         // rgba(255,255,255,.08)
+    dividerA = 0.08f;
     navContentBgR = navContentBgG = navContentBgB = 0.157f;  // #282828
     textOnAccentR = textOnAccentG = textOnAccentB = 1.0f;    // #FFFFFF
     // accent 保持不变

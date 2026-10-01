@@ -246,6 +246,15 @@ void Renderer::PushScale(float scale, float cx, float cy) {
     rt_->SetTransform(m);
 }
 
+void Renderer::PushTranslate(float dx, float dy) {
+    if (!rt_) return;
+    D2D1_MATRIX_3X2_F cur{};
+    rt_->GetTransform(&cur);
+    D2D1::Matrix3x2F t(cur.m11, cur.m12, cur.m21, cur.m22,
+                       cur.dx + dx, cur.dy + dy);
+    rt_->SetTransform(t);
+}
+
 void Renderer::PopTransform() {
     if (!rt_) return;
     rt_->SetTransform(D2D1::Matrix3x2F::Identity());

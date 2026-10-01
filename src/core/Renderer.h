@@ -67,6 +67,8 @@ public:
     // PopTransform 会恢复调用前的变换。注意：不要与 PushClip 交叉嵌套
     // （裁剪矩形是在当前变换空间下解释的）。
     void PushScale(float scale, float cx, float cy);
+    // 平移的绘制作用域（浮出层滑入/滑出动画用）
+    void PushTranslate(float dx, float dy);
     void PopTransform();
 
     // ---- 阴影 ----

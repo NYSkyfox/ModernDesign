@@ -52,6 +52,25 @@ struct Theme {
     float dialogBorderG = 0.459f;
     float dialogBorderB = 0.459f;
     float dialogBorderA = 0.4f;
+
+    // === Flyout / MenuFlyout / ToolTip 令牌（规格：WinUIonWeb theme.css）===
+    // --flyout-bg：浅 rgba(252,252,252,.92) / 深 rgba(44,44,44,.86)
+    float flyoutBgR = 0.988f;
+    float flyoutBgG = 0.988f;
+    float flyoutBgB = 0.988f;
+    float flyoutBgA = 0.92f;
+    // --flyout-border：浅 rgba(0,0,0,.06) / 深 rgba(255,255,255,.10)
+    float flyoutBorderR = 0.0f;
+    float flyoutBorderG = 0.0f;
+    float flyoutBorderB = 0.0f;
+    float flyoutBorderA = 0.06f;
+    // ToolTip 底色 = 亚克力 × 78%（复用 flyout 的 RGB，只改 alpha）
+    float tipBgA = 0.7176f;
+    // --stroke-divider：浅 rgba(0,0,0,.06) / 深 rgba(255,255,255,.08)
+    float dividerR = 0.0f;
+    float dividerG = 0.0f;
+    float dividerB = 0.0f;
+    float dividerA = 0.06f;
     // 卡片背景
     float cardBgR = 1.0f;      // #FFFFFF
     float cardBgG = 1.0f;
@@ -140,6 +159,11 @@ struct Theme {
     Color DialogContentBg() const { return Color(dialogContentBgR, dialogContentBgG, dialogContentBgB, dialogContentBgA); }
     Color DialogCmdBg() const { return Color(dialogCmdBgR, dialogCmdBgG, dialogCmdBgB, 1.0f); }
     Color DialogBorder() const { return Color(dialogBorderR, dialogBorderG, dialogBorderB, dialogBorderA); }
+    // Flyout / MenuFlyout / ToolTip
+    Color FlyoutBg() const { return Color(flyoutBgR, flyoutBgG, flyoutBgB, flyoutBgA); }
+    Color FlyoutBorder() const { return Color(flyoutBorderR, flyoutBorderG, flyoutBorderB, flyoutBorderA); }
+    Color TipBg() const { return Color(flyoutBgR, flyoutBgG, flyoutBgB, tipBgA); }
+    Color Divider() const { return Color(dividerR, dividerG, dividerB, dividerA); }
     Color TextOnAccent() const { return Color(textOnAccentR, textOnAccentG, textOnAccentB, 1.0f); }
     Color Accent() const { return Color(accentR, accentG, accentB, 1.0f); }
     Color ButtonFill() const { return Color(buttonFillR, buttonFillG, buttonFillB, 1.0f); }

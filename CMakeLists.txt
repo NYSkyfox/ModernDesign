@@ -59,6 +59,9 @@ set(MD_CONTROL_SOURCES
     src/controls/Slider.cpp
     src/controls/Expander.cpp
     src/controls/ContentDialog.cpp
+    src/controls/Flyout.cpp
+    src/controls/MenuFlyout.cpp
+    src/controls/ToolTip.cpp
     src/controls/NavigationView.cpp
     src/controls/Card.cpp
     src/controls/TextBlock.cpp

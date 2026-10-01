@@ -12,7 +12,9 @@ param(
     # 输出文件名
     [string]$OutName = "screenshot.png",
     # 启动即弹出 ContentDialog（用于给弹窗出图）
-    [switch]$ShowDialog
+    [switch]$ShowDialog,
+    # 启动即弹出浮出层（flyout | menu | tooltip）
+    [string]$Popup = ""
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
@@ -45,6 +47,15 @@ else { Remove-Item Env:\MODERNDESIGN_NAV_MODE -ErrorAction SilentlyContinue }
 # 启动即弹出弹窗（用于给 ContentDialog 出图）
 if ($ShowDialog) { $env:MODERNDESIGN_SHOW_DIALOG = "1" }
 else { Remove-Item Env:\MODERNDESIGN_SHOW_DIALOG -ErrorAction SilentlyContinue }
+# 启动即弹出浮出层（Flyout / MenuFlyout / ToolTip）
+Remove-Item Env:\MODERNDESIGN_SHOW_FLYOUT -ErrorAction SilentlyContinue
+Remove-Item Env:\MODERNDESIGN_SHOW_MENU -ErrorAction SilentlyContinue
+Remove-Item Env:\MODERNDESIGN_SHOW_TOOLTIP -ErrorAction SilentlyContinue
+switch ($Popup.ToLower()) {
+    "flyout"  { $env:MODERNDESIGN_SHOW_FLYOUT = "1" }
+    "menu"    { $env:MODERNDESIGN_SHOW_MENU = "1" }
+    "tooltip" { $env:MODERNDESIGN_SHOW_TOOLTIP = "1" }
+}
 
 $proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
 

@@ -32,6 +32,8 @@ ICONS = [
     ("ChevronDown",  "Chevron Down/SVG/ic_fluent_chevron_down_12_regular", "fluent_chevron_down_12_regular"),
     ("ChevronUp",    "Chevron Up/SVG/ic_fluent_chevron_up_12_regular",     "fluent_chevron_up_12_regular"),
     ("ChevronUpDown", "Chevron Up Down/SVG/ic_fluent_chevron_up_down_16_regular", "fluent_chevron_up_down_16_regular"),
+    ("Checkmark",    "Checkmark/SVG/ic_fluent_checkmark_16_regular",  "fluent_checkmark_16_regular"),
+    ("RadioButton",  "Radio Button/SVG/ic_fluent_radio_button_16_filled", "fluent_radio_button_16_filled"),
     ("Info",         "Info/SVG/ic_fluent_info_20_regular",            "fluent_info_20_regular"),
 ]
 

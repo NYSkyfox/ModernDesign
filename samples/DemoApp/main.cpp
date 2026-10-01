@@ -21,6 +21,9 @@
 #include "controls/Slider.h"
 #include "controls/Expander.h"
 #include "controls/ContentDialog.h"
+#include "controls/Flyout.h"
+#include "controls/MenuFlyout.h"
+#include "controls/ToolTip.h"
 #include "utils/FluentIcons.h"
 
 using namespace ModernDesign;
@@ -86,6 +89,7 @@ protected:
 
         BindExpanderPage();
         BindDialog();
+        BindPopups();
 
         // 测试钩子（CI 逐模式出图）：MODERNDESIGN_NAV_MODE = compact | minimal | top
         wchar_t mbuf[64] = {};
@@ -141,6 +145,12 @@ protected:
 
             homeProg_.SetProgress(0.6f);
             homeProg_.SetBounds(RectF(x, y, ContW(), 12.0f * s));
+            y += 12.0f * s + kGroupGap * s;
+
+            // 浮出层触发按钮（Flyout / MenuFlyout / ToolTip）
+            flyBtn_.SetBounds(RectF(x, y, 118.0f * s, kRowHeight * s));
+            menuBtn_.SetBounds(RectF(x + 130.0f * s, y, 118.0f * s, kRowHeight * s));
+            tipHost_.SetBounds(RectF(x + 260.0f * s, y, 150.0f * s, kRowHeight * s));
         }
 
         // ---- Expander 页布局 ----
@@ -208,6 +218,34 @@ protected:
                                            : NavigationView::DisplayMode::Left);
                     Invalidate();
                 });
+            }
+        }
+
+        // ---- 浮出层布局（Flyout / MenuFlyout / ToolTip）----
+        {
+            const RectF full(0.0f, 0.0f, ClientWidth(), ClientHeight());
+            flyout_.SetBounds(full);
+            menu_.SetBounds(full);
+            tip_.SetBounds(full);
+            flyout_.SetAnchor(flyBtn_.GetBounds());
+            menu_.SetAnchor(menuBtn_.GetBounds());
+            tip_.SetAnchor(tipHost_.GetBounds());
+
+            // 测试钩子：布局完成后（锚点已知）再弹出，保证截图稳定
+            if (pendingPopup_ != 0) {
+                const int k = pendingPopup_;
+                pendingPopup_ = 0;
+                if (k == 1) {
+                    flyout_.Show();
+                } else if (k == 2) {
+                    menu_.Show();
+                } else {
+                    tip_.SetPointer(tipHost_.GetBounds().CenterX(),
+                                    tipHost_.GetBounds().CenterY());
+                    tip_.SetPlacement(ToolTipPlacement::Mouse);
+                    tip_.Show(true);
+                    tipDemo_ = true;
+                }
             }
         }
     }
@@ -319,6 +357,58 @@ protected:
         }
     }
 
+    // ---------- Flyout / MenuFlyout / ToolTip ----------
+    void BindPopups() {
+        // Flyout：纯文本内容
+        flyout_.SetContent(L"This is a flyout. Click anywhere outside to dismiss it.");
+        flyout_.SetPlacement(PopupPlacement::Bottom);
+        flyBtn_.SetText(L"Show flyout");
+        flyBtn_.SetVariant(ButtonVariant::Standard);
+        flyBtn_.SetClickCallback([this] {
+            flyout_.Show();
+            Invalidate();
+        });
+
+        // MenuFlyout：普通项 / 图标项 / 快捷键 / 分隔线 / 复选 / 单选
+        menu_.AddItemWithIcon(L"New", FluentIcon::Home, L"Ctrl+N");
+        menu_.AddItemWithIcon(L"Open", FluentIcon::Grid, L"Ctrl+O");
+        menu_.AddItem(L"Save", L"Ctrl+S");
+        menu_.AddSeparator();
+        menu_.AddToggle(L"Word wrap", true);
+        menu_.AddItem(L"Disabled item", L"", false);
+        menu_.AddSeparator();
+        menu_.AddRadio(L"Small", true);
+        menu_.AddRadio(L"Medium", false);
+        menu_.AddRadio(L"Large", false);
+        menu_.SetPlacement(PopupPlacement::BottomEdgeAlignedLeft);
+        menuBtn_.SetText(L"Show menu");
+        menuBtn_.SetVariant(ButtonVariant::Standard);
+        menuBtn_.SetClickCallback([this] {
+            menu_.Show();
+            Invalidate();
+        });
+
+        // ToolTip：默认 Mouse 定位，800ms 延迟
+        tip_.SetContent(L"This is a tooltip. It follows the pointer.");
+        tip_.SetPlacement(ToolTipPlacement::Mouse);
+        tipHost_.SetText(L"Hover for tooltip");
+        tipHost_.SetVariant(ButtonVariant::Standard);
+
+        // 测试钩子（CI 出图）：
+        //   MODERNDESIGN_SHOW_FLYOUT=1 / _MENU=1 / _TOOLTIP=1
+        wchar_t b1[8] = {}, b2[8] = {}, b3[8] = {};
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_FLYOUT", b1, 8) > 0 && b1[0] == L'1')
+            pendingPopup_ = 1;
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_MENU", b2, 8) > 0 && b2[0] == L'1')
+            pendingPopup_ = 2;
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_TOOLTIP", b3, 8) > 0 && b3[0] == L'1')
+            pendingPopup_ = 3;
+        if (pendingPopup_ != 0) {
+            nav_.SetSelectedIndex(1);   // Home 页（触发按钮在那儿）
+            current_ = 0;
+        }
+    }
+
     void DrawPageHeader(const std::wstring& title, float s) {
         DrawText(title, ContX(), HeadY(), ContW(), 44.0f * s,
                  L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
@@ -339,6 +429,9 @@ protected:
         anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt); anim |= setTogC_.Update(dt);
         anim |= dlgBtn_.Update(dt);
         anim |= dialog_.Update(dt);   // 弹窗动画 + 内容（CheckBox）
+        anim |= flyout_.Update(dt);   // 浮出层（含 83ms 淡入 / 250ms 展开）
+        anim |= menu_.Update(dt);
+        anim |= tip_.Update(dt);      // ToolTip（含 show delay 倒计时）
         return anim;
     }
 
@@ -356,6 +449,8 @@ protected:
             homeChk_.Draw(*this, theme, s); homeTog_.Draw(*this, theme, s);
             homeRadioA_.Draw(*this, theme, s); homeRadioB_.Draw(*this, theme, s);
             homeSlider_.Draw(*this, theme, s); homeProg_.Draw(*this, theme, s);
+            flyBtn_.Draw(*this, theme, s); menuBtn_.Draw(*this, theme, s);
+            tipHost_.Draw(*this, theme, s);
         } else if (current_ == 1) {
             DrawPageHeader(L"Expander", s);
             expanderA_.Draw(*this, theme, s);
@@ -369,16 +464,27 @@ protected:
 
         // ContentDialog：模态浮层，必须最后画（盖住导航栏与页面）
         dialog_.Draw(*this, theme, s);
+
+        // 浮出层（Flyout / MenuFlyout / ToolTip）：最顶层
+        flyout_.Draw(*this, theme, s);
+        menu_.Draw(*this, theme, s);
+        tip_.Draw(*this, theme, s);
     }
 
     void OnMouseMove(float x, float y) override {
         if (dialog_.OnMouseMove(x, y)) return;   // 模态：弹窗吃掉一切
+        if (flyout_.OnMouseMove(x, y)) return;   // 浮出层在页面之上
+        if (menu_.OnMouseMove(x, y)) return;
+        UpdateToolTipHover(x, y);
+
         nav_.OnMouseMove(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseMove(x, y); homeBtnAcc_.OnMouseMove(x, y);
             homeChk_.OnMouseMove(x, y); homeTog_.OnMouseMove(x, y);
             homeRadioA_.OnMouseMove(x, y); homeRadioB_.OnMouseMove(x, y);
             homeSlider_.OnMouseMove(x, y);
+            flyBtn_.OnMouseMove(x, y); menuBtn_.OnMouseMove(x, y);
+            tipHost_.OnMouseMove(x, y);
         } else if (current_ == 1) {
             expanderA_.OnMouseMove(x, y); expanderB_.OnMouseMove(x, y); expanderC_.OnMouseMove(x, y);
         } else {
@@ -387,12 +493,18 @@ protected:
     }
     void OnMouseLeave() override {
         if (dialog_.IsOpen()) { dialog_.OnMouseLeave(); return; }
+        if (flyout_.IsOpen()) flyout_.OnMouseLeave();
+        if (menu_.IsOpen()) menu_.OnMouseLeave();
+        if (tipHover_) { tipHover_ = false; tip_.OnPointerLeave(); }
+        tip_.OnPointerLeaveTip();
+
         nav_.OnMouseLeave();
         if (current_ <= 0) {
             homeBtnStd_.OnMouseLeave(); homeBtnAcc_.OnMouseLeave();
             homeChk_.OnMouseLeave(); homeTog_.OnMouseLeave();
             homeRadioA_.OnMouseLeave(); homeRadioB_.OnMouseLeave();
             homeSlider_.OnMouseLeave();
+            flyBtn_.OnMouseLeave(); menuBtn_.OnMouseLeave(); tipHost_.OnMouseLeave();
         } else if (current_ == 1) {
             expanderA_.OnMouseLeave(); expanderB_.OnMouseLeave(); expanderC_.OnMouseLeave();
         } else {
@@ -401,12 +513,15 @@ protected:
     }
     void OnMouseDown(float x, float y) override {
         if (dialog_.OnMouseDown(x, y)) return;
+        if (flyout_.OnMouseDown(x, y)) return;   // 点外部 = light dismiss
+        if (menu_.OnMouseDown(x, y)) return;
         nav_.OnMouseDown(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseDown(x, y); homeBtnAcc_.OnMouseDown(x, y);
             homeChk_.OnMouseDown(x, y); homeTog_.OnMouseDown(x, y);
             homeRadioA_.OnMouseDown(x, y); homeRadioB_.OnMouseDown(x, y);
             homeSlider_.OnMouseDown(x, y);
+            flyBtn_.OnMouseDown(x, y); menuBtn_.OnMouseDown(x, y); tipHost_.OnMouseDown(x, y);
         } else if (current_ == 1) {
             expanderA_.OnMouseDown(x, y); expanderB_.OnMouseDown(x, y); expanderC_.OnMouseDown(x, y);
         } else {
@@ -415,12 +530,15 @@ protected:
     }
     void OnMouseUp(float x, float y) override {
         if (dialog_.OnMouseUp(x, y)) return;
+        if (flyout_.OnMouseUp(x, y)) return;
+        if (menu_.OnMouseUp(x, y)) return;
         nav_.OnMouseUp(x, y);
         if (current_ <= 0) {
             homeBtnStd_.OnMouseUp(x, y); homeBtnAcc_.OnMouseUp(x, y);
             homeChk_.OnMouseUp(x, y); homeTog_.OnMouseUp(x, y);
             homeRadioA_.OnMouseUp(x, y); homeRadioB_.OnMouseUp(x, y);
             homeSlider_.OnMouseUp(x, y);
+            flyBtn_.OnMouseUp(x, y); menuBtn_.OnMouseUp(x, y); tipHost_.OnMouseUp(x, y);
         } else if (current_ == 1) {
             expanderA_.OnMouseUp(x, y); expanderB_.OnMouseUp(x, y); expanderC_.OnMouseUp(x, y);
         } else {
@@ -433,10 +551,32 @@ protected:
     }
     void OnKeyDown(int vk) override {
         if (dialog_.OnKeyDown(vk)) return;
+        if (flyout_.OnKeyDown(vk)) return;   // Esc 关闭浮出层
+        if (menu_.OnKeyDown(vk)) return;
         if (vk == VK_SPACE) ToggleTheme();
     }
 
 private:
+    // ToolTip 悬停跟踪：进入目标后延迟显示；在提示本体上时保持显示
+    void UpdateToolTipHover(float x, float y) {
+        if (tipDemo_) return;   // CI 固定展示：忽略指针进出，保证截图稳定
+        const RectF host = tipHost_.GetBounds();
+        const bool inHost = host.Contains(x, y);
+        if (inHost && !tipHover_) {
+            tipHover_ = true;
+            tip_.OnPointerEnter(host, x, y);
+        } else if (inHost) {
+            tip_.OnPointerMove(x, y);
+        } else if (tipHover_) {
+            tipHover_ = false;
+            tip_.OnPointerLeave();
+        }
+
+        const bool inPanel = tip_.IsOpen() && tip_.PanelRect().Contains(x, y);
+        if (inPanel) tip_.OnPointerEnterTip();
+        else         tip_.OnPointerLeaveTip();
+    }
+
     int current_ = 0;
     bool setBound_ = false;
     NavigationView nav_;
@@ -463,6 +603,15 @@ private:
     Button dlgBtn_;
     CheckBox dlgChk_;
     int dlgResult_ = 0;   // 0=None 1=Primary 2=Secondary
+
+    // 浮出层：Flyout / MenuFlyout / ToolTip + 触发控件
+    Flyout flyout_;
+    MenuFlyout menu_;
+    ToolTip tip_;
+    Button flyBtn_, menuBtn_, tipHost_;
+    bool tipHover_ = false;
+    bool tipDemo_ = false;    // CI 固定展示 ToolTip（忽略指针进出）
+    int  pendingPopup_ = 0;   // 1=Flyout 2=MenuFlyout 3=ToolTip（CI 测试钩子）
 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
