@@ -105,6 +105,7 @@ target_link_libraries(ModernDesign PUBLIC
     user32
     gdi32
     shell32
+    winmm             # timeBeginPeriod（动画定时器精度提到 1ms）
     ole32
     uuid
 )

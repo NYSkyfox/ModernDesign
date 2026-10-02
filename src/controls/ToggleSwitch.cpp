@@ -31,16 +31,25 @@ void ToggleSwitch::OnMouseUp(float x, float y) {
 }
 
 bool ToggleSwitch::Update(float dt) {
+    // 滑动：固定时长定时驱动（WinUI 手感），Draw 时再套缓出
     float toggleTarget = (isOn_ && enabled_) ? 1.0f : 0.0f;
-    toggleT_ = Approach(toggleT_, toggleTarget, dt, 20.0f);
-
+    if (!toggleAnim_ && std::abs(toggleT_ - toggleTarget) > 0.001f) {
+        toggleFrom_ = toggleT_;
+        toggleTo_ = toggleTarget;
+        toggleElapsed_ = 0.0f;
+        toggleAnim_ = true;
+    }
+    if (toggleAnim_) {
+        toggleElapsed_ += dt;
+        float p = (kToggleDur > 0.0f) ? FzMn(1.0f, toggleElapsed_ / kToggleDur) : 1.0f;
+        toggleT_ = LerpF(toggleFrom_, toggleTo_, p);
+        if (p >= 1.0f) { toggleT_ = toggleTo_; toggleAnim_ = false; }
+    }
     float hoverTarget = (hot_ && enabled_) ? 1.0f : 0.0f;
     hoverT_ = Approach(hoverT_, hoverTarget, dt, 20.0f);
-
     float pressTarget = (pressed_ && enabled_) ? 1.0f : 0.0f;
     pressedT_ = Approach(pressedT_, pressTarget, dt, 30.0f);
-
-    return std::abs(toggleT_ - toggleTarget) > 0.005f
+    return toggleAnim_
         || std::abs(hoverT_ - hoverTarget) > 0.005f
         || std::abs(pressedT_ - pressTarget) > 0.005f;
 }

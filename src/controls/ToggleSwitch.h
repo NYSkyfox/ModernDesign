@@ -52,6 +52,12 @@ private:
     float toggleT_ = 0.0f;
     float hoverT_ = 0.0f;
     float pressedT_ = 0.0f;
+    // 滑动动画（固定时长、定时驱动，避免指数趋近的生硬感）
+    float toggleFrom_ = 0.0f;
+    float toggleTo_ = 0.0f;
+    float toggleElapsed_ = 0.0f;
+    bool  toggleAnim_ = false;
+    static constexpr float kToggleDur = 0.15f;
 };
 
 } // namespace ModernDesign

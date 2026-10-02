@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "app/App.h"
-
+#include <mmsystem.h>   // timeBeginPeriod / timeEndPeriod
 namespace ModernDesign {
 
 namespace {
@@ -99,6 +99,7 @@ App::~App() {
         DestroyWindow(hwnd_);
         hwnd_ = nullptr;
     }
+    timeEndPeriod(1);   // 恢复系统默认定时器精度（Initialize 里 timeBeginPeriod(1)）
     Shutdown();
 }
 
@@ -147,6 +148,9 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
 
     lastFrameMs_ = GetTickCount64();
     lastThemePollMs_ = lastFrameMs_;
+    // 把系统定时器精度提到 1ms：显著降低 GetTickCount64 的 ~15ms 跳变，
+    // 让导航/开关等定时动画的 dt 平滑（否则 paneElapsed += dt 会逐 15ms 跳、卡顿）。
+    timeBeginPeriod(1);
     return S_OK;
 }
 
@@ -205,7 +209,7 @@ int App::Run() {
         if (!needsDraw_ && !animating_) {
             MsgWaitForMultipleObjectsEx(0, nullptr, 100, QS_ALLINPUT, MWMO_ALERTABLE);
         } else {
-            Sleep(8);
+            Sleep(1);
         }
     }
 

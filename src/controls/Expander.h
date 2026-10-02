@@ -87,6 +87,10 @@ public:
     void SetContentHeight(float h) { contentH_ = h; }
     float ContentHeight() const { return EffectiveContentHeight(); }
     float HeaderHeight() const { return headerH_; }
+    // 当前可见高度（DIP）= header + 动画进度×内容高度。供流布局补位。
+    float VisibleHeightDip() const {
+        return headerH_ + EffectiveContentHeight() * EasedProgress();
+    }
     // 内容自身自然尺寸（DIP；0 = 撑满），配合 SetContentAlignment 生效
     void SetContentSize(float wDip, float hDip) {
         contentNatW_ = wDip;

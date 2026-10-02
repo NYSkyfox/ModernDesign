@@ -83,14 +83,14 @@ void ExpanderPage::Layout() {
     float mb = Expander::kMarginBottom * s;
 
     {
-        float h = (expanderA_.HeaderHeight() + expanderA_.ContentHeight()) * s;
+        float h = expanderA_.VisibleHeightDip() * s;
         expanderA_.SetScale(s);
         expanderA_.SetBounds(RectF(x, y, w, h));
         expAToggle_.SetBounds(RectF(x + pad, y + expanderA_.HeaderHeight() * s + pad, rowW, kRowHeight * s));
         y += h + mb;
     }
     {
-        float h = (expanderB_.HeaderHeight() + expanderB_.ContentHeight()) * s;
+        float h = expanderB_.VisibleHeightDip() * s;
         expanderB_.SetScale(s);
         expanderB_.SetBounds(RectF(x, y, w, h));
         RectF cb = expanderB_.HeaderControlsBox(s);
@@ -99,7 +99,7 @@ void ExpanderPage::Layout() {
         y += h + mb;
     }
     {
-        float h = (expanderC_.HeaderHeight() + expanderC_.ContentHeight()) * s;
+        float h = expanderC_.VisibleHeightDip() * s;
         expanderC_.SetScale(s);
         expanderC_.SetBounds(RectF(x, y, w, h));
         expCToggle_.SetBounds(RectF(x + pad, y + pad, rowW, kRowHeight * s));
