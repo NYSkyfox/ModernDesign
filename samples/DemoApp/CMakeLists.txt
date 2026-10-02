@@ -3,10 +3,18 @@ cmake_minimum_required(VERSION 3.20)
 project(DemoApp)
 
 # 链接到 ModernDesign 静态库
-add_executable(DemoAppDemo main.cpp)
+add_executable(DemoAppDemo main.cpp
+    DemoApp.h
+    DemoPage.h
+    pages/HomePage.cpp
+    pages/ExpanderPage.cpp
+    pages/SettingsPage.cpp
+)
 
 target_include_directories(DemoAppDemo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/pages
 )
 
 target_link_libraries(DemoAppDemo PRIVATE
