@@ -31,7 +31,7 @@ constexpr float kMargin = 28.0f;
 class DemoWindow : public App {
 public:
     // ---- 页面路由（当前页 index：0=Home 1=Expander 2=Settings）----
-    Demo::DemoPage* Page(int i) { return &page_[i]; }
+    Demo::DemoPage* Page(int i) { return page_[i]; }
     int CurrentPage() const { return current_; }
     const std::vector<int>& PageMap() const { return pageMap_; }
 

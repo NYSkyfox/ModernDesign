@@ -4,8 +4,6 @@
 #include "controls/SettingsCard.h"
 #include "controls/ToggleSwitch.h"
 
-using namespace ModernDesign::Controls;
-
 class DemoWindow;
 
 namespace ModernDesign::Demo {
