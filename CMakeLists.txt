@@ -65,6 +65,7 @@ set(MD_CONTROL_SOURCES
     src/controls/ToolTip.cpp
     src/controls/NavigationView.cpp
     src/controls/Card.cpp
+    src/controls/SettingsCard.cpp
     src/controls/TextBlock.cpp
 )
 

@@ -26,6 +26,7 @@
 #include "controls/MenuFlyout.h"
 #include "controls/ToolTip.h"
 #include "controls/HyperlinkButton.h"
+#include "controls/SettingsCard.h"
 #include "utils/FluentIcons.h"
 
 using namespace ModernDesign;
@@ -100,6 +101,23 @@ protected:
             if (m == L"compact")      nav_.SetDisplayMode(NavigationView::DisplayMode::LeftCompact);
             else if (m == L"minimal") nav_.SetDisplayMode(NavigationView::DisplayMode::LeftMinimal);
             else if (m == L"top")     nav_.SetDisplayMode(NavigationView::DisplayMode::Top);
+        }
+
+        // 测试钩子（CI 出图）：MODERNDESIGN_PAGE = home | expander | settings
+        {
+            wchar_t pbuf[32] = {};
+            if (GetEnvironmentVariableW(L"MODERNDESIGN_PAGE", pbuf, 32) > 0) {
+                std::wstring pg = pbuf;
+                int navIdx = -1; int page = -1;
+                if (pg == L"home")      { navIdx = 1; page = 0; }
+                else if (pg == L"expander")   { navIdx = 2; page = 1; }
+                else if (pg == L"settings")   { navIdx = 9; page = 2; }
+                if (page >= 0) {
+                    nav_.SetSelectedIndex(navIdx);
+                    current_ = page;
+                    Invalidate();
+                }
+            }
         }
     }
 
@@ -207,22 +225,55 @@ protected:
             }
         }
 
-        // ---- Settings 页布局 ----
+        // ---- Settings 页布局（SettingsCard 容器）----
         {
             float x = ContX(), y = PageTop();
-            setTogA_.SetText(L"Dark mode");
+            const float cardH = 70.0f;
+            const float cardGap = 4.0f;   // margin-bottom
+            const float togW = 52.0f;     // track 40 + pad 12（开关文字区为 0，不重复标签）
+
+            // Card A — Appearance（开关：深色模式）
+            setCardA_.SetHeader(L"Appearance");
+            setCardA_.SetDescription(L"Choose the app color mode");
+            setCardA_.SetHeaderIcon(static_cast<int>(FluentIcon::Home));
+            setCardA_.SetContentWidth(togW);
+            setCardA_.SetBounds(RectF(x, y, ContW(), cardH * s));
+            setTogA_.SetText(L"");
             setTogA_.SetIsOn(!GetTheme().lightMode);
-            setTogA_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
-            y += kRowHeight * s + kRowGap * s;
+            setTogA_.SetBounds(setCardA_.ContentRect(s));
+            y += cardH * s + cardGap * s;
 
-            setTogB_.SetText(L"Compact pane (48px rail)");
+            // Card B — Navigation（开关：紧凑窗格）
+            setCardB_.SetHeader(L"Navigation");
+            setCardB_.SetDescription(L"Compact pane (48px rail)");
+            setCardB_.SetHeaderIcon(static_cast<int>(FluentIcon::Navigation));
+            setCardB_.SetContentWidth(togW);
+            setCardB_.SetBounds(RectF(x, y, ContW(), cardH * s));
+            setTogB_.SetText(L"");
             setTogB_.SetIsOn(nav_.IsCompact());
-            setTogB_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
-            y += kRowHeight * s + kRowGap * s;
+            setTogB_.SetBounds(setCardB_.ContentRect(s));
+            y += cardH * s + cardGap * s;
 
-            setTogC_.SetText(L"Top navigation");
+            // Card C — Layout（开关：顶部导航）
+            setCardC_.SetHeader(L"Layout");
+            setCardC_.SetDescription(L"Top navigation bar");
+            setCardC_.SetHeaderIcon(static_cast<int>(FluentIcon::Grid));
+            setCardC_.SetContentWidth(togW);
+            setCardC_.SetBounds(RectF(x, y, ContW(), cardH * s));
+            setTogC_.SetText(L"");
             setTogC_.SetIsOn(nav_.GetDisplayMode() == NavigationView::DisplayMode::Top);
-            setTogC_.SetBounds(RectF(x, y, ContW(), kRowHeight * s));
+            setTogC_.SetBounds(setCardC_.ContentRect(s));
+            y += cardH * s + cardGap * s;
+
+            // Card D — About（纯文本 content + ActionIcon chevron；clickable 演示 hover 态）
+            setCardD_.SetHeader(L"About");
+            setCardD_.SetDescription(L"ModernDesign — Fluent framework");
+            setCardD_.SetHeaderIcon(static_cast<int>(FluentIcon::Info));
+            setCardD_.SetClickable(true);
+            setCardD_.SetActionIconVisible(true);
+            setCardD_.SetContent(L"v1.0");
+            setCardD_.SetContentWidth(36.0f);
+            setCardD_.SetBounds(RectF(x, y, ContW(), cardH * s));
 
             if (!setBound_) {
                 setBound_ = true;
@@ -453,6 +504,7 @@ protected:
         anim |= expAToggle_.Update(dt); anim |= expBToggle_.Update(dt); anim |= expCToggle_.Update(dt);
         anim |= expHeaderBtn_.Update(dt);
         anim |= setTogA_.Update(dt); anim |= setTogB_.Update(dt); anim |= setTogC_.Update(dt);
+        anim |= setCardA_.Update(dt); anim |= setCardB_.Update(dt); anim |= setCardC_.Update(dt); anim |= setCardD_.Update(dt);
         anim |= dlgBtn_.Update(dt);
         anim |= dialog_.Update(dt);   // 弹窗动画 + 内容（CheckBox）
         anim |= flyout_.Update(dt);   // 浮出层（含 83ms 淡入 / 250ms 展开）
@@ -485,6 +537,8 @@ protected:
             expanderC_.Draw(*this, theme, s);
         } else {
             DrawPageHeader(L"Settings", s);
+            setCardA_.Draw(*this, theme, s); setCardB_.Draw(*this, theme, s);
+            setCardC_.Draw(*this, theme, s); setCardD_.Draw(*this, theme, s);
             setTogA_.Draw(*this, theme, s); setTogB_.Draw(*this, theme, s);
             setTogC_.Draw(*this, theme, s);
         }
@@ -517,6 +571,7 @@ protected:
             expanderA_.OnMouseMove(x, y); expanderB_.OnMouseMove(x, y); expanderC_.OnMouseMove(x, y);
         } else {
             setTogA_.OnMouseMove(x, y); setTogB_.OnMouseMove(x, y); setTogC_.OnMouseMove(x, y);
+            setCardA_.OnMouseMove(x, y); setCardB_.OnMouseMove(x, y); setCardC_.OnMouseMove(x, y); setCardD_.OnMouseMove(x, y);
         }
     }
     void OnMouseLeave() override {
@@ -538,6 +593,7 @@ protected:
             expanderA_.OnMouseLeave(); expanderB_.OnMouseLeave(); expanderC_.OnMouseLeave();
         } else {
             setTogA_.OnMouseLeave(); setTogB_.OnMouseLeave(); setTogC_.OnMouseLeave();
+            setCardA_.OnMouseLeave(); setCardB_.OnMouseLeave(); setCardC_.OnMouseLeave(); setCardD_.OnMouseLeave();
         }
     }
     void OnMouseDown(float x, float y) override {
@@ -556,6 +612,7 @@ protected:
             expanderA_.OnMouseDown(x, y); expanderB_.OnMouseDown(x, y); expanderC_.OnMouseDown(x, y);
         } else {
             setTogA_.OnMouseDown(x, y); setTogB_.OnMouseDown(x, y); setTogC_.OnMouseDown(x, y);
+            setCardA_.OnMouseDown(x, y); setCardB_.OnMouseDown(x, y); setCardC_.OnMouseDown(x, y); setCardD_.OnMouseDown(x, y);
         }
     }
     void OnMouseUp(float x, float y) override {
@@ -574,6 +631,7 @@ protected:
             expanderA_.OnMouseUp(x, y); expanderB_.OnMouseUp(x, y); expanderC_.OnMouseUp(x, y);
         } else {
             setTogA_.OnMouseUp(x, y); setTogB_.OnMouseUp(x, y); setTogC_.OnMouseUp(x, y);
+            setCardA_.OnMouseUp(x, y); setCardB_.OnMouseUp(x, y); setCardC_.OnMouseUp(x, y); setCardD_.OnMouseUp(x, y);
         }
     }
 
@@ -628,6 +686,7 @@ private:
     Button expHeaderBtn_;
 
     // Settings
+    SettingsCard setCardA_, setCardB_, setCardC_, setCardD_;
     ToggleSwitch setTogA_, setTogB_, setTogC_;
 
     // ContentDialog（模态弹窗）+ 触发按钮 + 弹窗内容里的 CheckBox

@@ -14,7 +14,9 @@ param(
     # 启动即弹出 ContentDialog（用于给弹窗出图）
     [switch]$ShowDialog,
     # 启动即弹出浮出层（flyout | menu | tooltip）
-    [string]$Popup = ""
+    [string]$Popup = "",
+    # 启动即切到指定页（home | expander | settings），用于给页面控件出图
+    [string]$Page = ""
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
@@ -56,6 +58,9 @@ switch ($Popup.ToLower()) {
     "menu"    { $env:MODERNDESIGN_SHOW_MENU = "1" }
     "tooltip" { $env:MODERNDESIGN_SHOW_TOOLTIP = "1" }
 }
+# 启动即切到指定页（用于给 SettingsCard 等页面控件出图）
+if ($Page -ne "") { $env:MODERNDESIGN_PAGE = $Page }
+else { Remove-Item Env:\MODERNDESIGN_PAGE -ErrorAction SilentlyContinue }
 
 $proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
 
