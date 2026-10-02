@@ -8,6 +8,10 @@ using namespace ModernDesign::Controls;
 
 namespace ModernDesign::Demo {
 
+void SettingsPage::Bind() {
+    // 初始化逻辑在 Layout 里（卡片 SetHeader 等），此处无一次性绑定
+}
+
 void SettingsPage::Layout() {
     float s = owner_->DpiScale();
     float x = owner_->ContX(), y = owner_->PageTop();
