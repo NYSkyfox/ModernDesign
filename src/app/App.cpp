@@ -178,15 +178,17 @@ int App::Run() {
         lastFrameMs_ = now;
         dt = ClampF(dt, 0.0f, 0.1f);   // 防止卡顿后跳变
 
-        // 主题轮询（500ms 节流）
+        // 主题轮询（500ms 节流）——仅在用户未手动切换时自动跟随系统
         if (now - lastThemePollMs_ >= 500) {
             lastThemePollMs_ = now;
-            bool lightNow = SystemUsesLightTheme();
-            if (lightNow != currentLight_) {
-                currentLight_ = lightNow;
-                theme_.SetLightMode(lightNow);
-                OnThemeChanged();
-                needsDraw_ = true;
+            if (!themeManual_) {
+                bool lightNow = SystemUsesLightTheme();
+                if (lightNow != currentLight_) {
+                    currentLight_ = lightNow;
+                    theme_.SetLightMode(lightNow);
+                    OnThemeChanged();
+                    needsDraw_ = true;
+                }
             }
             if (ApplySystemAccent()) {
                 needsDraw_ = true;
@@ -245,6 +247,7 @@ void App::Invalidate() const {
 void App::ToggleTheme() {
     currentLight_ = !currentLight_;
     theme_.SetLightMode(currentLight_);
+    themeManual_ = true;   // 锁定手动值，轮询不再覆盖
     OnThemeChanged();
     MarkDirty();
 }

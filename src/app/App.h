@@ -94,6 +94,7 @@ private:
     bool quit_ = false;
     bool needsDraw_ = true;
     bool animating_ = false;
+    bool themeManual_ = false;   // 用户手动切换主题后，停止自动跟随系统
     ULONGLONG lastFrameMs_ = 0;
     ULONGLONG lastThemePollMs_ = 0;
     bool currentLight_ = true;
