@@ -73,6 +73,10 @@ void NavigationView::ClearItems() {
     selected_ = 0;
     indX_ = -1.0f;
     indY_ = -1.0f;
+    indFromX_ = 0.0f;
+    indFromY_ = 0.0f;
+    indElapsed_ = 0.0f;
+    indAnim_ = false;
 }
 
 void NavigationView::SetSelectedIndex(int i) {
@@ -429,20 +433,45 @@ bool NavigationView::Update(float dt) {
     hotT_ = v1;
     hamburgerT_ = v2;
 
-    // ---- indicator left/top（transition 200ms，X 与 Y 同时平滑）----
+    // ---- indicator left/top（官方：定时 200ms + EaseNavInline，X 与 Y 同时缓动）----
+    const float indDur = 0.2f;
     float tx = IndicatorTargetX();
     float ty = IndicatorTargetY();
     if (indX_ < 0.0f) {
+        // 首次布局：直接到位，不播动画
         indX_ = tx;
         indY_ = ty;
+        indFromX_ = tx;
+        indFromY_ = ty;
     } else {
-        float vx = Approach(indX_, tx, dt, 14.0f);
-        if (std::abs(vx - tx) < 0.1f) vx = tx;
-        float vy = Approach(indY_, ty, dt, 14.0f);
-        if (std::abs(vy - ty) < 0.1f) vy = ty;
-        if (std::abs(vx - indX_) > 0.01f || std::abs(vy - indY_) > 0.01f) busy = true;
-        indX_ = vx;
-        indY_ = vy;
+        // 目标变化 → 从当前位置重启一段 200ms 定时动画
+        if (indAnim_) {
+            // 已在动画中且目标又变了：以当前插值点为新起点
+        } else {
+            if (std::abs(tx - indFromX_) > 0.5f || std::abs(ty - indFromY_) > 0.5f) {
+                indFromX_ = indX_;
+                indFromY_ = indY_;
+                indElapsed_ = 0.0f;
+                indAnim_ = true;
+            }
+        }
+        if (indAnim_) {
+            indElapsed_ += dt;
+            float p = FzMn(1.0f, indElapsed_ / indDur);
+            float e = EaseNavInline(p);
+            float vx = LerpF(indFromX_, tx, e);
+            float vy = LerpF(indFromY_, ty, e);
+            indX_ = vx;
+            indY_ = vy;
+            if (p >= 1.0f) {
+                indX_ = tx;
+                indY_ = ty;
+                indFromX_ = tx;
+                indFromY_ = ty;
+                indAnim_ = false;
+            }
+            busy = true;
+        }
     }
 
     return busy;
@@ -457,8 +486,10 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
     RebuildLayout();
 
     const bool light = theme.lightMode;
-    const Color subtleHov   = light ? Color(0, 0, 0, 0.0373f) : Color(1, 1, 1, 0.0605f);
-    const Color subtlePress = light ? Color(0, 0, 0, 0.0241f) : Color(1, 1, 1, 0.0419f);
+    // 官方 token：SubtleFillColorSecondary = light #09000000 / dark #0FFFFFFF
+    //            SubtleFillColorTertiary   = light #06000000 / dark #0AFFFFFF
+    const Color subtleHov   = light ? Color(0, 0, 0, 0.0353f) : Color(1, 1, 1, 0.0588f);
+    const Color subtlePress = light ? Color(0, 0, 0, 0.0235f) : Color(1, 1, 1, 0.0392f);
     const Color divider     = light ? Color(0, 0, 0, 0.06f)   : Color(1, 1, 1, 0.08f);
     const Color textPrimary   = theme.TextPrimary();
     const Color textSecondary = theme.TextSecondary();

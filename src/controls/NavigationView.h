@@ -149,9 +149,13 @@ private:
     // 分组展开动画（每项一个进度）
     std::vector<float> groupT_;
 
-    // indicator 位置平滑（规格：left transition 200ms）
+    // indicator 位置平滑（官方：定时 200ms + cubic-bezier(0,0.35,0.15,1) = EaseNavInline）
     float indX_ = -1.0f;
     float indY_ = -1.0f;
+    float indFromX_ = 0.0f;
+    float indFromY_ = 0.0f;
+    float indElapsed_ = 0.0f;
+    bool  indAnim_ = false;
 
     // 交互状态
     bool hot_ = false;
