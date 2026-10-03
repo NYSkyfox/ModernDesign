@@ -539,16 +539,17 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         return 0;
 
     case WM_NCCALCSIZE: {
-        // 先让系统扣掉标准边框。非最大化时把客户区顶边再上移标题栏高（并入原系统标题栏区）；
-        // 最大化时客户区已贴屏幕顶，不再上移（否则标题栏会被裁到屏幕外），标题栏画在客户区 0..capH 即可见。
+        // 先让系统算标准非客户区，再把标题栏区并入客户区（由我自绘标题栏覆盖）。
+        // 最大化时 DefWindowProc 仍保留的系统标题栏区同样被 top-=capH 上移覆盖，
+        // 避免系统标题栏与自绘标题栏叠加成两个（clamp 防极边界客户区跑出屏幕）。
         LRESULT def = DefWindowProcW(h, m, w, l);
         if (w == TRUE && hwnd_) {
             int capH = FzMx(1, static_cast<int>(kCapH * dpiScale_));
-            titleBarPx_ = capH;   // 两种情况都设，供绘制/命中
-            if (!AppIsZoomed(hwnd_)) {
-                NCCALCSIZE_PARAMS* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(l);
-                p->rgrc[0].top -= capH;
-            }
+            titleBarPx_ = capH;   // 供绘制/命中
+            NCCALCSIZE_PARAMS* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(l);
+            int newTop = p->rgrc[0].top - capH;
+            if (newTop < 0) newTop = 0;
+            p->rgrc[0].top = newTop;
             return 0;
         }
         titleBarPx_ = 0;
