@@ -72,6 +72,7 @@ void NavigationView::ClearItems() {
     placed_.clear();
     selected_ = 0;
     indX_ = -1.0f;
+    indY_ = -1.0f;
 }
 
 void NavigationView::SetSelectedIndex(int i) {
