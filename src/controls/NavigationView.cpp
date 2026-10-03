@@ -187,11 +187,12 @@ RectF NavigationView::BackRect() const {
     if (mode_ == DisplayMode::Top || mode_ == DisplayMode::LeftMinimal) return RectF();
     float pad = kPanePad * s;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    float btnW = FzMx(innerW, kHamW * s);
-    // 左上角最顶（官方 ButtonHolderGrid：back 在上 row）
+    // back 固定 40（紧凑 innerW=40 时=占满，hamburger 让位）
+    float backW = FzMx(innerW, kHamW * s);
+    // 左上角，与 hamburger 同行
     float x = bounds_.x + pad;
-    float y = bounds_.y + pad;
-    return RectF(x, y, btnW, kBackH * s);
+    float y = bounds_.y + pad + kItemM * s;
+    return RectF(x, y, backW, kBackH * s);
 }
 
 RectF NavigationView::HamburgerRect() const {
@@ -199,16 +200,18 @@ RectF NavigationView::HamburgerRect() const {
     if (mode_ == DisplayMode::Top) return RectF();
     float pad = kPanePad * s;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    // 规格：.has-pane-title 时按钮宽度 = OpenPaneLength - 8 = 312；无标题/紧凑时 40
-    float btnW = FzMx(innerW, kHamW * s);
     float x = bounds_.x + pad;
-    float y = bounds_.y + pad + (kBackH + kCmdGap) * s;   // back 按钮下方
+    float w = FzMx(innerW, kHamW * s);
+    float y = bounds_.y + pad + kItemM * s;
     if (mode_ == DisplayMode::LeftMinimal) {
-        // Minimal：不占位，汉堡浮在左上角（面板收起时也要可见）
-        x = bounds_.x + pad;
-        y = bounds_.y + pad;
+        // Minimal：不占位，汉堡浮在左上角（面板收起时也要可见），无 back
+        return RectF(x, y, w, kHamH * s);
     }
-    return RectF(x, y, btnW, kHamH * s);
+    // Left / LeftCompact：back 在左，hamburger 紧随其右
+    float backW = FzMx(innerW, kHamW * s);
+    x = bounds_.x + pad + backW + kCmdGap * s;
+    w = FzMx(0.0f, innerW - backW - kCmdGap * s);   // 紧凑 innerW=40 → w=0（隐藏）
+    return RectF(x, y, w, kHamH * s);
 }
 
 RectF NavigationView::PlacedRect(int i) const {
@@ -265,9 +268,7 @@ void NavigationView::RebuildLayout() {
     float pad = kPanePad * s;
     float px = bounds_.x;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    // command 区：非 Minimal = back(36)+gap+hamburger(36)；Minimal 仅 hamburger 浮层不占位
-    float cmdH = (mode_ == DisplayMode::LeftMinimal) ? kHamRowH : kCmdAreaH;
-    float y = bounds_.y + pad + cmdH * s;   // command area
+    float y = bounds_.y + pad + kHamRowH * s;   // command row（back + hamburger 同行）
 
     for (size_t i = 0; i < items_.size(); ++i) {
         Item& it = items_[i];
@@ -699,7 +700,7 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
                 renderer.FillRoundedRect(br, kRadius * s, bb.WithAlpha(bb.a * backT_));
             const Color bfg = backEnabled_ ? textPrimary : textDisabled;
             DrawFluentIconCentered(renderer, FluentIcon::ChevronLeft, br, 16.0f * s,
-                                   bfg, -kPi * 0.5f);   // 逆时针 90°：ChevronDown → 向左
+                                   bfg, kPi * 0.5f);   // 顺时针 90°：ChevronDown → 向左
         }
         // 6b) hamburger + PaneTitle
         const RectF hr = HamburgerRect();

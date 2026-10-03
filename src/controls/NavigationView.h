@@ -186,11 +186,9 @@ private:
     static constexpr float kPanePad    = 4.0f;    // 面板 padding 4px
     static constexpr float kHamW       = 40.0f;   // hamburger 宽
     static constexpr float kHamH       = 36.0f;   // hamburger 高
-    static constexpr float kHamRowH    = 40.0f;   // command row
-    // command area = back(36) + hamburger(36) + 上下 padding（官方两行 36px 按钮垂直堆叠）
+    static constexpr float kHamRowH    = 40.0f;   // command row（back + hamburger 同行）
     static constexpr float kBackH      = 36.0f;   // 后退按钮高（= NavigationBackButtonHeight）
-    static constexpr float kCmdGap     = 4.0f;    // 两按钮之间间距
-    static constexpr float kCmdAreaH   = kBackH + kHamH + kCmdGap;  // 76
+    static constexpr float kCmdGap     = 4.0f;    // back 与 hamburger 间距
     static constexpr float kItemH      = 36.0f;   // 菜单项高
     static constexpr float kItemM      = 2.0f;    // 菜单项上下 margin
     static constexpr float kItemPadX   = 12.0f;   // 菜单项左右 padding
