@@ -33,6 +33,12 @@ public:
     // 客户端区尺寸（DIP）
     float ClientWidth() const { return clientWidth_; }
     float ClientHeight() const { return clientHeight_; }
+    // 沉浸式标题栏高度（DIP）；0 = 未启用（老系统无标题栏区时）
+    float TitleBarHeight() const {
+        return titleBarPx_ > 0 ? titleBarPx_ / FzMx(0.001f, dpiScale_) : 0.0f;
+    }
+    // 是否启用自绘沉浸式标题栏（非最大化）
+    bool IsImmersive() const;
 
     // 主题
     Theme& GetTheme() { return theme_; }
@@ -83,6 +89,12 @@ private:
     bool ApplySystemAccent();
     // 让系统标题栏跟随应用主题（DWMWA_USE_IMMERSIVE_DARK_MODE）
     void ApplyTitleBarTheme();
+    // 沉浸式标题栏：把客户区上延进标题栏区 + 自绘标题条/按钮
+    void ExtendClientIntoCaption();
+    void DrawTitleBar(Renderer& r, const Theme& th, float scale);
+    RectF CaptionButtonRect(int which, float scale) const;   // 0=min 1=max 2=close
+    int   CaptionButtonAt(float x, float y) const;           // DIP，-1 无
+    void  HandleCaptionButton(int which);
 
     // 消息循环辅助
     static void RequestQuit(HWND hwnd);
@@ -97,6 +109,11 @@ private:
     bool needsDraw_ = true;
     bool animating_ = false;
     bool themeManual_ = false;   // 用户手动切换主题后，停止自动跟随系统
+    int   titleBarPx_ = 0;             // 标题栏区物理像素高（0 = 未启用/最大化）
+    bool  mouseIn_ = false;            // 指针在客户区内
+    float mouseDipX_ = 0.0f, mouseDipY_ = 0.0f;
+    bool  titleBarDown_ = false;       // 指针在标题栏按下
+    int   titleBarBtn_ = -1;           // 按下的标题按钮（0 min/1 max/2 close）
     ULONGLONG lastFrameMs_ = 0;
     ULONGLONG lastThemePollMs_ = 0;
     bool currentLight_ = true;

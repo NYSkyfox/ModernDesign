@@ -16,7 +16,9 @@ param(
     # 启动即弹出浮出层（flyout | menu | tooltip）
     [string]$Popup = "",
     # 启动即切到指定页（home | expander | settings），用于给页面控件出图
-    [string]$Page = ""
+    [string]$Page = "",
+    # 启动即深色模式（传 -dark 给 exe），用于出深色主题截图
+    [switch]$Dark
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
@@ -62,7 +64,9 @@ switch ($Popup.ToLower()) {
 if ($Page -ne "") { $env:MODERNDESIGN_PAGE = $Page }
 else { Remove-Item Env:\MODERNDESIGN_PAGE -ErrorAction SilentlyContinue }
 
-$proc = Start-Process -FilePath $exe -WorkingDirectory $PWD -PassThru
+$arglist = @()
+if ($Dark) { $arglist += "-dark" }
+$proc = Start-Process -FilePath $exe -ArgumentList $arglist -WorkingDirectory $PWD -PassThru
 
 # ---- 内嵌 C#：仅 user32 P/Invoke（不依赖 System.Drawing）----
 Add-Type @"

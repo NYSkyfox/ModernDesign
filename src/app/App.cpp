@@ -54,6 +54,18 @@ bool SystemUsesLightTheme() {
     return value != 0;
 }
 
+// 沉浸式标题栏规格（DIP）
+constexpr float kCapBw = 46.0f;   // 窗口控制按钮宽
+constexpr float kCapH  = 40.0f;   // 标题栏高
+
+// 窗口是否最大化
+bool AppIsZoomed(HWND h) {
+    WINDOWPLACEMENT wp{};
+    wp.length = sizeof(wp);
+    if (GetWindowPlacement(h, &wp)) return wp.showCmd == SW_SHOWMAXIMIZED;
+    return false;
+}
+
 // 读取 Windows 强调色（HKCU\...\Windows\DWM\AccentColor）
 // 值为 0x00RRGGBB（低 24 位是 RRGGBB，高 8 位 alpha 通常 0x00）
 // 返回 true 表示读到有效值，并写入 r/g/b（0~1）
@@ -125,6 +137,16 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
 
     // 3. 系统主题
     currentLight_ = SystemUsesLightTheme();
+    {
+        // -dark / MODERNDESIGN_DARK：启动即深色并锁定（不被系统轮询拉回）
+        wchar_t dk[16] = {};
+        if (GetEnvironmentVariableW(L"MODERNDESIGN_DARK", dk, 16) > 0 &&
+            (_wcsicmp(dk, L"1") == 0 || _wcsicmp(dk, L"true") == 0 ||
+             _wcsicmp(dk, L"dark") == 0)) {
+            currentLight_ = false;
+            themeManual_ = true;
+        }
+    }
     theme_.SetLightMode(currentLight_);
     ApplySystemAccent();   // 优先 Windows 强调色，失败用默认墨绿
 
@@ -147,9 +169,15 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
     // 7. 尺寸 + 布局
     UpdateClientSize();
     UpdateDpiScale();
+    ExtendClientIntoCaption();   // 设 titleBarPx_ + 标题栏主题
+    // DPI 已就绪：强制重算非客户区，让 WM_NCCALCSIZE 用正确 DPI 扩展标题栏区
+    // （创建窗口时的首次 NCCALCSIZE 此刻 DPI 尚为 0，需在此补一次）
+    if (!AppIsZoomed(hwnd_)) {
+        SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+    }
     OnLayout();
     OnThemeChanged();
-    ApplyTitleBarTheme();   // 标题栏初始跟随系统主题
 
     lastFrameMs_ = GetTickCount64();
     lastThemePollMs_ = lastFrameMs_;
@@ -234,6 +262,7 @@ void App::DrawNow() {
 
     Clear(theme_.WindowBg());
     OnRender();
+    DrawTitleBar(*this, theme_, dpiScale_);   // 沉浸式标题栏（非最大化时）
 
     HRESULT hr = EndDraw();
     if (hr == D2DERR_RECREATE_TARGET) {
@@ -266,6 +295,100 @@ void App::ApplyTitleBarTheme() {
     BOOL dark = currentLight_ ? FALSE : TRUE;
     DwmSetWindowAttribute(hwnd_, DWMWA_USE_IMMERSIVE_DARK_MODE,
                           &dark, sizeof(dark));
+}
+
+// ============================================================
+// 沉浸式标题栏
+// ============================================================
+bool App::IsImmersive() const {
+    return hwnd_ != nullptr && !AppIsZoomed(hwnd_);
+}
+
+void App::ExtendClientIntoCaption() {
+    if (!hwnd_) return;
+    ApplyTitleBarTheme();
+    if (AppIsZoomed(hwnd_)) {
+        // 最大化：系统标题栏（深色，DWM 已设），客户区不并入标题栏区，内容从 y=0 起。
+        titleBarPx_ = 0;
+        return;
+    }
+    // 非最大化：自绘沉浸式标题栏，客户区上延 capH（由 WM_NCCALCSIZE 实现）。
+    int capH = static_cast<int>(kCapH * dpiScale_);
+    titleBarPx_ = (capH > 0) ? capH : 1;
+}
+
+RectF App::CaptionButtonRect(int which, float scale) const {
+    float bw = kCapBw * scale, bh = kCapH * scale;
+    float x = ClientWidth() - (3 - which) * bw;   // which 0=min 1=max 2=close
+    return RectF(x, 0.0f, bw, bh);
+}
+
+int App::CaptionButtonAt(float x, float y) const {
+    float s = FzMx(0.001f, dpiScale_);
+    if (y < 0.0f || y >= kCapH * s) return -1;
+    for (int w = 0; w < 3; ++w)
+        if (CaptionButtonRect(w, s).Contains(x, y)) return w;
+    return -1;
+}
+
+void App::HandleCaptionButton(int which) {
+    switch (which) {
+    case 0: ShowWindow(hwnd_, SW_MINIMIZE); break;
+    case 1: ShowWindow(hwnd_,
+               AppIsZoomed(hwnd_) ? SW_RESTORE : SW_MAXIMIZE); break;
+    case 2: DestroyWindow(hwnd_); break;
+    }
+}
+
+void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
+    if (!IsImmersive()) return;
+    float s = scale;
+    float tbH = kCapH * s;
+    const bool light = th.lightMode;
+    Color bg = th.WindowBg();
+    Color text = th.TextPrimary();
+    Color stroke = light ? Color(0, 0, 0, 0.10f) : Color(1, 1, 1, 0.10f);
+    Color hovBg  = light ? Color(0, 0, 0, 0.05f) : Color(1, 1, 1, 0.06f);
+    Color prsBg  = light ? Color(0, 0, 0, 0.09f) : Color(1, 1, 1, 0.10f);
+    Color closeHov  = Color(0.898f, 0.05f, 0.05f, 1.0f);
+    Color closePrs  = Color(0.788f, 0.0f, 0.0f, 1.0f);
+    // ---- 背景 ----
+    r.FillRect(RectF(0, 0, ClientWidth(), tbH), bg);
+    r.DrawLine(0, tbH, ClientWidth(), tbH, 1.0f * s, stroke);
+    // ---- 标题文字（避开右侧按钮区）----
+    float btnLeft = ClientWidth() - 3 * kCapBw * s;
+    if (btnLeft > 8.0f * s) {
+        r.DrawText(L"Modern Design", 12.0f * s, 0.0f, btnLeft - 16.0f * s, tbH,
+                   L"Segoe UI", 12.0f * s, DWRITE_FONT_WEIGHT_NORMAL, text,
+                   DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+    }
+    // ---- 三个控制按钮：hover/pressed 底 + 4×10 字形线 ----
+    float glyphW = 10.0f * s, glyphH = 10.0f * s;
+    for (int w = 0; w < 3; ++w) {
+        RectF br = CaptionButtonRect(w, s);
+        bool hov = (mouseIn_ && CaptionButtonAt(mouseDipX_, mouseDipY_) == w)
+                  && !titleBarDown_;
+        bool prs = (titleBarDown_ && titleBarBtn_ == w);
+        if (hov || prs) {
+            Color fill = (w == 2) ? (prs ? closePrs : closeHov)
+                                  : (prs ? prsBg : hovBg);
+            r.FillRect(br, fill);
+        }
+        Color g = text;
+        float cx = br.CenterX(), cy = br.CenterY();
+        if (w == 0) {      // 最小化：底部横线
+            r.DrawLine(cx - glyphW * 0.5f, cy + glyphH * 0.5f,
+                       cx + glyphW * 0.5f, cy + glyphH * 0.5f, 1.0f * s, g);
+        } else if (w == 1) {  // 最大化：正方形
+            r.StrokeRect(RectF(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
+                               glyphW, glyphH), 1.0f * s, g);
+        } else {           // 关闭：X
+            r.DrawLine(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
+                       cx + glyphW * 0.5f, cy + glyphH * 0.5f, 1.0f * s, g);
+            r.DrawLine(cx - glyphW * 0.5f, cy + glyphH * 0.5f,
+                       cx + glyphW * 0.5f, cy - glyphH * 0.5f, 1.0f * s, g);
+        }
+    }
 }
 
 // ============================================================
@@ -397,6 +520,37 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_CREATE:
         return 0;
 
+    case WM_NCCALCSIZE: {
+        // 先让系统扣掉标准边框，再（非最大化时）把客户区顶边再上移标题栏高。
+        LRESULT def = DefWindowProcW(h, m, w, l);
+        if (w == TRUE && hwnd_ && !AppIsZoomed(hwnd_)) {
+            int capH = FzMx(1, static_cast<int>(kCapH * dpiScale_));
+            titleBarPx_ = capH;   // 同步缓存供绘制/命中
+            NCCALCSIZE_PARAMS* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(l);
+            p->rgrc[0].top -= capH;
+            return 0;
+        }
+        titleBarPx_ = 0;   // 最大化：系统标题栏，内容从 y=0
+        return def;
+    }
+
+    case WM_NCHITTEST: {
+        LRESULT def = DefWindowProcW(h, m, w, l);
+        if (def == HTCLIENT && hwnd_ && !AppIsZoomed(hwnd_)) {
+            POINT pt{};
+            pt.x = GET_X_LPARAM(l);
+            pt.y = GET_Y_LPARAM(l);
+            ScreenToClient(hwnd_, &pt);
+            if (pt.y >= 0 && pt.y < titleBarPx_) {
+                int btn = CaptionButtonAt(static_cast<float>(pt.x) / dpiScale_,
+                                          static_cast<float>(pt.y) / dpiScale_);
+                if (btn >= 0) return HTCLIENT;   // 标题按钮：走 WM_LBUTTON*
+                return HTCAPTION;                // 标题栏其余：拖拽/双击最大化
+            }
+        }
+        return def;
+    }
+
     case WM_SIZE: {
         UINT nw = LOWORD(l);
         UINT nh = HIWORD(l);
@@ -441,6 +595,9 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_MOUSEMOVE: {
         float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
         float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
+        mouseIn_ = true;
+        mouseDipX_ = x;
+        mouseDipY_ = y;
         OnMouseMove(x, y);
         MarkDirty();
         // 追踪鼠标离开
@@ -453,22 +610,47 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
     }
 
     case WM_MOUSELEAVE:
+        if (mouseIn_) { mouseIn_ = false; MarkDirty(); }
         OnMouseLeave();
         MarkDirty();
         return 0;
 
-    case WM_LBUTTONDOWN:
+    case WM_LBUTTONDOWN: {
         SetCapture(hwnd_);
         SetFocus(hwnd_);
-        OnMouseDown(static_cast<float>(GET_X_LPARAM(l)) / dpiScale_,
-                    static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_);
+        float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
+        float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
+        int cb = (hwnd_ && !AppIsZoomed(hwnd_))
+                     ? CaptionButtonAt(x, y) : -1;
+        if (cb >= 0) {
+            titleBarDown_ = true;
+            titleBarBtn_ = cb;
+            MarkDirty();
+            return 0;   // 标题按钮：不转发给页面
+        }
+        OnMouseDown(x, y);
         MarkDirty();
         return 0;
+    }
 
     case WM_LBUTTONUP: {
         if (GetCapture() == hwnd_) ReleaseCapture();
-        OnMouseUp(static_cast<float>(GET_X_LPARAM(l)) / dpiScale_,
-                  static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_);
+        float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
+        float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
+        if (titleBarDown_) {
+            int releaseOn = CaptionButtonAt(x, y);
+            int pressed = titleBarBtn_;
+            titleBarDown_ = false;
+            titleBarBtn_ = -1;
+            if (releaseOn >= 0 && releaseOn == pressed) {
+                HandleCaptionButton(pressed);
+                MarkDirty();
+                return 0;
+            }
+            MarkDirty();
+            return 0;
+        }
+        OnMouseUp(x, y);
         MarkDirty();
         return 0;
     }

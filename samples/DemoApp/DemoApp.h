@@ -206,8 +206,9 @@ private:
     // ---- 每帧布局：导航 + 当前页 + 全局浮层 ----
     void LayoutPages() {
         float s = DpiScale();
+        float tbH = TitleBarHeight();   // 沉浸式标题栏占顶部，内容从 tbH 起
         nav_.SetScale(s);
-        nav_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
+        nav_.SetBounds(RectF(0, tbH, ClientWidth(), FzMx(0.0f, ClientHeight() - tbH)));
         dialog_.SetBounds(RectF(0, 0, ClientWidth(), ClientHeight()));
 
         page_[current_]->Layout();

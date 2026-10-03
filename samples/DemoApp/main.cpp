@@ -14,7 +14,12 @@
 #include "pch.h"
 #include "DemoApp.h"
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow) {
+    // 启动参数：-dark → 直接深色模式（设 MODERNDESIGN_DARK，App 读取）
+    if (lpCmdLine) {
+        if (_wcsicmp(lpCmdLine, L"-dark") == 0 || _wcsicmp(lpCmdLine, L"--dark") == 0)
+            SetEnvironmentVariableW(L"MODERNDESIGN_DARK", L"1");
+    }
     DemoWindow app;
     HRESULT hr = app.Initialize(hInstance, nCmdShow);
     if (FAILED(hr)) {
