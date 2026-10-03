@@ -187,8 +187,8 @@ RectF NavigationView::BackRect() const {
     if (mode_ == DisplayMode::Top || mode_ == DisplayMode::LeftMinimal) return RectF();
     float pad = kPanePad * s;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    // back 固定 40（紧凑 innerW=40 时=占满，hamburger 让位）
-    float backW = FzMx(innerW, kHamW * s);
+    // back 固定 40（FzMn：展开态 innerW=312 时取 40，紧凑 innerW=40 时=占满，hamburger 让位）
+    float backW = FzMn(innerW, kHamW * s);
     // 左上角，与 hamburger 同行
     float x = bounds_.x + pad;
     float y = bounds_.y + pad + kItemM * s;
