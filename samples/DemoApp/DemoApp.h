@@ -163,6 +163,9 @@ private:
         pageMap_ = { -1, 0, 1, -1, -1, 0, 0, 0, 0, -1, 2 };
         nav_.SetSelectedIndex(2);            // 默认停在 Expander 页
         current_ = 1;
+        nav_.SetBackRequestedCallback([this] {  // 后退按钮：演示回 Home
+            nav_.SetSelectedIndex(0);
+        });
         nav_.SetSelectionCallback([this](int i) {
             int p = (i >= 0 && i < static_cast<int>(pageMap_.size())) ? pageMap_[i] : -1;
             if (p >= 0) { current_ = p; Invalidate(); }

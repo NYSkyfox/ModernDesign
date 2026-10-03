@@ -181,6 +181,19 @@ RectF NavigationView::TopBarRect() const {
                  FzMx(0.0f, bounds_.w - 2.0f * kPanePad * s), kTopBarH * s);
 }
 
+RectF NavigationView::BackRect() const {
+    float s = sc_;
+    // Top / Minimal 模式不显示后退按钮
+    if (mode_ == DisplayMode::Top || mode_ == DisplayMode::LeftMinimal) return RectF();
+    float pad = kPanePad * s;
+    float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
+    float btnW = FzMx(innerW, kHamW * s);
+    // 左上角最顶（官方 ButtonHolderGrid：back 在上 row）
+    float x = bounds_.x + pad;
+    float y = bounds_.y + pad;
+    return RectF(x, y, btnW, kBackH * s);
+}
+
 RectF NavigationView::HamburgerRect() const {
     float s = sc_;
     if (mode_ == DisplayMode::Top) return RectF();
@@ -189,7 +202,7 @@ RectF NavigationView::HamburgerRect() const {
     // 规格：.has-pane-title 时按钮宽度 = OpenPaneLength - 8 = 312；无标题/紧凑时 40
     float btnW = FzMx(innerW, kHamW * s);
     float x = bounds_.x + pad;
-    float y = bounds_.y + pad + kItemM * s;
+    float y = bounds_.y + pad + (kBackH + kCmdGap) * s;   // back 按钮下方
     if (mode_ == DisplayMode::LeftMinimal) {
         // Minimal：不占位，汉堡浮在左上角（面板收起时也要可见）
         x = bounds_.x + pad;
@@ -252,7 +265,9 @@ void NavigationView::RebuildLayout() {
     float pad = kPanePad * s;
     float px = bounds_.x;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    float y = bounds_.y + pad + kHamRowH * s;   // command row
+    // command 区：非 Minimal = back(36)+gap+hamburger(36)；Minimal 仅 hamburger 浮层不占位
+    float cmdH = (mode_ == DisplayMode::LeftMinimal) ? kHamRowH : kCmdAreaH;
+    float y = bounds_.y + pad + cmdH * s;   // command area
 
     for (size_t i = 0; i < items_.size(); ++i) {
         Item& it = items_[i];
@@ -337,7 +352,16 @@ void NavigationView::OnMouseMove(float x, float y) {
     hot_ = false;
     hotIndex_ = -1;
     hamburgerHot_ = false;
+    backHot_ = false;
     RebuildLayout();
+    if (backEnabled_) {
+        RectF br = BackRect();
+        if (!br.IsEmpty() && br.Contains(x, y)) {
+            hot_ = true;
+            backHot_ = true;
+            return;
+        }
+    }
     RectF hr = HamburgerRect();
     if (!hr.IsEmpty() && hr.Contains(x, y)) {
         hot_ = true;
@@ -355,10 +379,21 @@ void NavigationView::OnMouseLeave() {
     hot_ = false;
     hotIndex_ = -1;
     hamburgerHot_ = false;
+    backHot_ = false;
 }
 
 void NavigationView::OnMouseDown(float x, float y) {
     RebuildLayout();
+    backPressed_ = false;
+    if (backEnabled_) {
+        RectF br = BackRect();
+        backPressed_ = (!br.IsEmpty() && br.Contains(x, y));
+        if (backPressed_) {
+            hot_ = true;
+            backHot_ = true;
+            return;
+        }
+    }
     RectF hr = HamburgerRect();
     hamburgerPressed_ = (!hr.IsEmpty() && hr.Contains(x, y));
     if (hamburgerPressed_) {
@@ -375,6 +410,16 @@ void NavigationView::OnMouseDown(float x, float y) {
 
 void NavigationView::OnMouseUp(float x, float y) {
     RebuildLayout();
+    if (backPressed_) {
+        backPressed_ = false;
+        if (backEnabled_) {
+            RectF br = BackRect();
+            if (!br.IsEmpty() && br.Contains(x, y)) {
+                if (onBackRequested_) onBackRequested_();
+                return;
+            }
+        }
+    }
     RectF hr = HamburgerRect();
     if (hamburgerPressed_) {
         hamburgerPressed_ = false;
@@ -425,13 +470,18 @@ bool NavigationView::Update(float dt) {
     // ---- hover / press 过渡（--fast-duration）----
     float ht = hot_ ? 1.0f : 0.0f;
     float hb = hamburgerHot_ ? 1.0f : 0.0f;
+    float bk = backHot_ ? 1.0f : 0.0f;
     float v1 = Approach(hotT_, ht, dt, 30.0f);
     float v2 = Approach(hamburgerT_, hb, dt, 30.0f);
+    float v3 = Approach(backT_, bk, dt, 30.0f);
     if (std::abs(v1 - ht) < 0.002f) v1 = ht;
     if (std::abs(v2 - hb) < 0.002f) v2 = hb;
-    if (std::abs(v1 - hotT_) > 0.0002f || std::abs(v2 - hamburgerT_) > 0.0002f) busy = true;
+    if (std::abs(v3 - bk) < 0.002f) v3 = bk;
+    if (std::abs(v1 - hotT_) > 0.0002f || std::abs(v2 - hamburgerT_) > 0.0002f ||
+        std::abs(v3 - backT_) > 0.0002f) busy = true;
     hotT_ = v1;
     hamburgerT_ = v2;
+    backT_ = v3;
 
     // ---- indicator left/top（官方：定时 200ms + EaseNavInline，X 与 Y 同时缓动）----
     const float indDur = 0.2f;
@@ -639,8 +689,19 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
         }
     }
 
-    // ---- 6) command row：hamburger + PaneTitle ----
+    // ---- 6) command area：后退按钮 + hamburger + PaneTitle ----
     if (mode_ != DisplayMode::Top) {
+        // 6a) 后退按钮（左上角最顶，ChevronLeft 旋转 -90°）
+        const RectF br = BackRect();
+        if (!br.IsEmpty()) {
+            const Color bb = backPressed_ ? subtlePress : subtleHov;
+            if (backT_ > 0.01f)
+                renderer.FillRoundedRect(br, kRadius * s, bb.WithAlpha(bb.a * backT_));
+            const Color bfg = backEnabled_ ? textPrimary : textDisabled;
+            DrawFluentIconCentered(renderer, FluentIcon::ChevronLeft, br, 16.0f * s,
+                                   bfg, -kPi * 0.5f);   // 逆时针 90°：ChevronDown → 向左
+        }
+        // 6b) hamburger + PaneTitle
         const RectF hr = HamburgerRect();
         if (!hr.IsEmpty()) {
             // 只有 hover/press 背景是条件绘制；图标必须常显

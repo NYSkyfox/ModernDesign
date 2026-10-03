@@ -29,6 +29,7 @@ enum class FluentIcon {
     ChevronDown,   // 12px
     ChevronUp,     // 12px
     ChevronUpDown, // 16px
+    ChevronLeft,   // 12px（ChevronDown 旋转 -90°）
     Checkmark,     // 16px
     RadioButton,   // 16px（filled，菜单单选标记）
     Info,          // 20px
