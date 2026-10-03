@@ -365,8 +365,9 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
             r.FillRect(br, prs ? prsBg : hovBg);
         }
         Color g = backEnabled_ ? text : th.TextDisabled();
-        // 朝左 chevron：Fluent 矢量 path（ChevronLeft = ChevronDown 旋转 +90° 顺时针）
-        DrawFluentIconCentered(r, FluentIcon::ChevronLeft, br, 14.0f * s, g, 3.14159265f / 2.0f);
+        // 官方后退按钮 = Segoe Fluent Icons E72B "Back"（带杆左箭头）
+        // 用 Fluent Arrow Left 16 矢量（与 Home 同源同质量），无旋转
+        DrawFluentIconCentered(r, FluentIcon::ArrowLeft, br, 14.0f * s, g, 0.0f);
     }
 
     // ---- 标题文字（避开左侧 back 区 + 右侧按钮区）----

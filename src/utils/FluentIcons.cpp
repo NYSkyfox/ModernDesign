@@ -18,6 +18,7 @@ const FluentIconData::IconPath& PathOf(FluentIcon icon) {
     case FluentIcon::ChevronUp:   return FluentIconData::kChevronUp;
     case FluentIcon::ChevronUpDown: return FluentIconData::kChevronUpDown;
     case FluentIcon::ChevronLeft: return FluentIconData::kChevronDown;
+    case FluentIcon::ArrowLeft: return FluentIconData::kArrowLeft;
     case FluentIcon::Checkmark:   return FluentIconData::kCheckmark;
     case FluentIcon::RadioButton: return FluentIconData::kRadioButton;
     case FluentIcon::Info:        return FluentIconData::kInfo;
