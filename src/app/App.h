@@ -81,6 +81,8 @@ private:
     void UpdateDpiScale();
     // 从 Windows 注册表读取强调色并应用（读不到则用默认墨绿），返回是否变化
     bool ApplySystemAccent();
+    // 让系统标题栏跟随应用主题（DWMWA_USE_IMMERSIVE_DARK_MODE）
+    void ApplyTitleBarTheme();
 
     // 消息循环辅助
     static void RequestQuit(HWND hwnd);

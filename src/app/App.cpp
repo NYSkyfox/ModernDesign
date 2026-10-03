@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "app/App.h"
 #include <mmsystem.h>   // timeBeginPeriod / timeEndPeriod
+// 老 SDK 的 dwmapi.h 可能未定义 DWMWA_USE_IMMERSIVE_DARK_MODE（Win10 18985+ 引入）
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
 namespace ModernDesign {
 
 namespace {
@@ -145,6 +149,7 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
     UpdateDpiScale();
     OnLayout();
     OnThemeChanged();
+    ApplyTitleBarTheme();   // 标题栏初始跟随系统主题
 
     lastFrameMs_ = GetTickCount64();
     lastThemePollMs_ = lastFrameMs_;
@@ -186,6 +191,7 @@ int App::Run() {
                 if (lightNow != currentLight_) {
                     currentLight_ = lightNow;
                     theme_.SetLightMode(lightNow);
+                    ApplyTitleBarTheme();
                     OnThemeChanged();
                     needsDraw_ = true;
                 }
@@ -248,8 +254,18 @@ void App::ToggleTheme() {
     currentLight_ = !currentLight_;
     theme_.SetLightMode(currentLight_);
     themeManual_ = true;   // 锁定手动值，轮询不再覆盖
+    ApplyTitleBarTheme();  // 标题栏跟随
     OnThemeChanged();
     MarkDirty();
+}
+
+void App::ApplyTitleBarTheme() {
+    if (!hwnd_) return;
+    // DWMWA_USE_IMMERSIVE_DARK_MODE (Win10 2004+ / Win11)。
+    // 老系统无此属性时 DwmSetWindowAttribute 返回失败，静默忽略。
+    BOOL dark = currentLight_ ? FALSE : TRUE;
+    DwmSetWindowAttribute(hwnd_, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                          &dark, sizeof(dark));
 }
 
 // ============================================================
