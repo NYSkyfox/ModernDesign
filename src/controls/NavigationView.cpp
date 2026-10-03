@@ -204,6 +204,12 @@ float NavigationView::IndicatorTargetX() const {
         rel = kIndChildL;   // 规格：.is-child { left: 36px }
     return bounds_.x + rel * sc_;
 }
+float NavigationView::IndicatorTargetY() const {
+    if (selected_ >= 0 && selected_ < static_cast<int>(placed_.size())
+        && !placed_[selected_].rect.IsEmpty())
+        return placed_[selected_].rect.CenterY();
+    return bounds_.y;
+}
 
 // ============================================================
 // 布局
@@ -422,15 +428,20 @@ bool NavigationView::Update(float dt) {
     hotT_ = v1;
     hamburgerT_ = v2;
 
-    // ---- indicator left（transition 200ms）----
+    // ---- indicator left/top（transition 200ms，X 与 Y 同时平滑）----
     float tx = IndicatorTargetX();
+    float ty = IndicatorTargetY();
     if (indX_ < 0.0f) {
         indX_ = tx;
+        indY_ = ty;
     } else {
-        float v = Approach(indX_, tx, dt, 14.0f);
-        if (std::abs(v - tx) < 0.1f) v = tx;
-        if (std::abs(v - indX_) > 0.01f) busy = true;
-        indX_ = v;
+        float vx = Approach(indX_, tx, dt, 14.0f);
+        if (std::abs(vx - tx) < 0.1f) vx = tx;
+        float vy = Approach(indY_, ty, dt, 14.0f);
+        if (std::abs(vy - ty) < 0.1f) vy = ty;
+        if (std::abs(vx - indX_) > 0.01f || std::abs(vy - indY_) > 0.01f) busy = true;
+        indX_ = vx;
+        indY_ = vy;
     }
 
     return busy;
@@ -588,9 +599,10 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
                                          1.5f * s, accent);
             } else {
                 float ix = (indX_ >= 0.0f) ? indX_ : IndicatorTargetX();
-                renderer.FillRoundedRect(RectF(ix, sr.CenterY() - kIndLen * s * 0.5f,
+                float iy = (indY_ >= 0.0f) ? indY_ : sr.CenterY();
+                renderer.FillRoundedRect(RectF(ix, iy - kIndLen * s * 0.5f,
                                                kIndThick * s, kIndLen * s),
-                                         2.0f * s, accent);
+                                          2.0f * s, accent);
             }
         }
     }

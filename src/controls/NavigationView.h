@@ -122,6 +122,7 @@ private:
     void  ActivateItem(int i, float x);
     void  StartPaneAnim(bool opening);
     float IndicatorTargetX() const;
+    float IndicatorTargetY() const;
     RectF HamburgerRect() const;
     RectF TopBarRect() const;
     RectF PlacedRect(int i) const;
@@ -150,6 +151,7 @@ private:
 
     // indicator 位置平滑（规格：left transition 200ms）
     float indX_ = -1.0f;
+    float indY_ = -1.0f;
 
     // 交互状态
     bool hot_ = false;
