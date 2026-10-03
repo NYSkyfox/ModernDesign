@@ -127,7 +127,7 @@ public:
     static constexpr float kDefaultPadding   = 16.0f;  // padding 0 16 / content 16
     static constexpr float kMinContentHeight = 48.0f;  // content min-height
     static constexpr float kMarginBottom     = 4.0f;   // margin-bottom
-    static constexpr float kAnimDuration     = 0.2f;   // 0.2s cubic-bezier(0,0,0,1)
+    static constexpr float kAnimDuration     = 0.25f;  // 0.25s FastOutSlowIn（WinUI 3 ExpandCollapse）
 
 private:
     float EffectiveContentHeight() const {

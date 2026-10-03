@@ -3,6 +3,7 @@
 #include "core/Theme.h"
 #include "controls/Expander.h"
 #include "utils/FluentIcons.h"
+#include "utils/Easing.h"
 
 namespace ModernDesign {
 
@@ -38,7 +39,8 @@ float EaseStandard(float p) {
 // ============================================================
 
 float Expander::EasedProgress() const {
-    return EaseStandard(expandT_);
+    // WinUI 3 ExpandCollapse：FastOutSlowIn = cubic-bezier(0.1, 0.9, 0.2, 1.0)
+    return EaseFlyoutOpen(expandT_);
 }
 
 // Header 随方向锚定：Down 贴 bounds 顶，Up 贴 bounds 底（与动画无关）

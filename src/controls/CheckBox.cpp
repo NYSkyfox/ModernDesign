@@ -131,22 +131,27 @@ void CheckBox::Draw(Renderer& renderer, const Theme& theme, float scale) {
     renderer.FillRoundedRect(boxRect, kCheckRadius * s, boxBg);
     renderer.StrokeRoundedRect(boxRect, kCheckRadius * s, 1.0f * s, boxStroke);
 
-    // ---- glyph（对勾 / 横杠），用 checkedT_ 做淡入 ----
-    float glyphAlpha = EaseOut(checkedT_);
-    if (isOn && glyphAlpha > 0.001f) {
-        Color gc = glyphColor.WithAlpha(glyphAlpha);
+    // ---- glyph（对勾渐进描边 / 横杠淡入）----
+    float glyphP = EaseOut(checkedT_);
+    if (isOn && glyphP > 0.001f) {
         float cx = bx + size * 0.5f;
         float cy = by + size * 0.5f;
         if (indeterminate_) {
-            // 横杠（indeterminate）
+            // 横杠（indeterminate）：淡入
             float hw = size * 0.30f;
-            renderer.DrawLine(cx - hw, cy, cx + hw, cy, 2.0f * s, gc);
+            renderer.DrawLine(cx - hw, cy, cx + hw, cy, 2.0f * s,
+                              glyphColor.WithAlpha(glyphP));
         } else {
-            // 对勾（两段线）
-            renderer.DrawLine(cx - size * 0.28f, cy + size * 0.02f,
-                              cx - size * 0.08f, cy + size * 0.20f, 2.0f * s, gc);
-            renderer.DrawLine(cx - size * 0.08f, cy + size * 0.20f,
-                              cx + size * 0.28f, cy - size * 0.18f, 2.0f * s, gc);
+            // 对勾：两段线按进度"生长"（先短腿后长腿，模拟 WinUI AnimatedIcon 描边动画）
+            const float x1 = cx - size * 0.28f, y1 = cy + size * 0.02f;
+            const float xm = cx - size * 0.08f, ym = cy + size * 0.20f;
+            const float x2 = cx + size * 0.28f, y2 = cy - size * 0.18f;
+            float p1 = FzMn(1.0f, glyphP * 2.0f);                 // 段1：前半
+            float p2 = FzMn(1.0f, FzMx(0.0f, glyphP * 2.0f - 1.0f)); // 段2：后半
+            if (p1 > 0.001f)
+                renderer.DrawLine(x1, y1, LerpF(x1, xm, p1), LerpF(y1, ym, p1), 2.0f * s, glyphColor);
+            if (p2 > 0.001f)
+                renderer.DrawLine(xm, ym, LerpF(xm, x2, p2), LerpF(ym, y2, p2), 2.0f * s, glyphColor);
         }
     }
 
