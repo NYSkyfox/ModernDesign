@@ -172,10 +172,8 @@ HRESULT App::Initialize(HINSTANCE hInstance, int nCmdShow) {
     ExtendClientIntoCaption();   // 设 titleBarPx_ + 标题栏主题
     // DPI 已就绪：强制重算非客户区，让 WM_NCCALCSIZE 用正确 DPI 扩展标题栏区
     // （创建窗口时的首次 NCCALCSIZE 此刻 DPI 尚为 0，需在此补一次）
-    if (!AppIsZoomed(hwnd_)) {
-        SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-    }
+    SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
     OnLayout();
     OnThemeChanged();
 
@@ -301,18 +299,13 @@ void App::ApplyTitleBarTheme() {
 // 沉浸式标题栏
 // ============================================================
 bool App::IsImmersive() const {
-    return hwnd_ != nullptr && !AppIsZoomed(hwnd_);
+    return hwnd_ != nullptr;
 }
 
 void App::ExtendClientIntoCaption() {
     if (!hwnd_) return;
     ApplyTitleBarTheme();
-    if (AppIsZoomed(hwnd_)) {
-        // 最大化：系统标题栏（深色，DWM 已设），客户区不并入标题栏区，内容从 y=0 起。
-        titleBarPx_ = 0;
-        return;
-    }
-    // 非最大化：自绘沉浸式标题栏，客户区上延 capH（由 WM_NCCALCSIZE 实现）。
+    // 始终自绘标题栏（最大化也自绘）
     int capH = static_cast<int>(kCapH * dpiScale_);
     titleBarPx_ = (capH > 0) ? capH : 1;
 }
@@ -546,22 +539,25 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         return 0;
 
     case WM_NCCALCSIZE: {
-        // 先让系统扣掉标准边框，再（非最大化时）把客户区顶边再上移标题栏高。
+        // 先让系统扣掉标准边框。非最大化时把客户区顶边再上移标题栏高（并入原系统标题栏区）；
+        // 最大化时客户区已贴屏幕顶，不再上移（否则标题栏会被裁到屏幕外），标题栏画在客户区 0..capH 即可见。
         LRESULT def = DefWindowProcW(h, m, w, l);
-        if (w == TRUE && hwnd_ && !AppIsZoomed(hwnd_)) {
+        if (w == TRUE && hwnd_) {
             int capH = FzMx(1, static_cast<int>(kCapH * dpiScale_));
-            titleBarPx_ = capH;   // 同步缓存供绘制/命中
-            NCCALCSIZE_PARAMS* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(l);
-            p->rgrc[0].top -= capH;
+            titleBarPx_ = capH;   // 两种情况都设，供绘制/命中
+            if (!AppIsZoomed(hwnd_)) {
+                NCCALCSIZE_PARAMS* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(l);
+                p->rgrc[0].top -= capH;
+            }
             return 0;
         }
-        titleBarPx_ = 0;   // 最大化：系统标题栏，内容从 y=0
+        titleBarPx_ = 0;
         return def;
     }
 
     case WM_NCHITTEST: {
         LRESULT def = DefWindowProcW(h, m, w, l);
-        if (def == HTCLIENT && hwnd_ && !AppIsZoomed(hwnd_)) {
+        if (def == HTCLIENT && hwnd_) {
             POINT pt{};
             pt.x = GET_X_LPARAM(l);
             pt.y = GET_Y_LPARAM(l);
@@ -648,8 +644,7 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         SetFocus(hwnd_);
         float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
         float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
-        int cb = (hwnd_ && !AppIsZoomed(hwnd_))
-                     ? CaptionButtonAt(x, y) : -1;
+        int cb = hwnd_ ? CaptionButtonAt(x, y) : -1;
         int backHit = -1;
         if (cb < 0 && backEnabled_ && BackButtonRect(dpiScale_).Contains(x, y))
             backHit = -2;
