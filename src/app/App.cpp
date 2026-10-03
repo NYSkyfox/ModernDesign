@@ -323,6 +323,12 @@ RectF App::CaptionButtonRect(int which, float scale) const {
     return RectF(x, 0.0f, bw, bh);
 }
 
+RectF App::BackButtonRect(float scale) const {
+    // 标题栏最左：4px 左 pad + 40 宽（对齐 WinUI 3 TitleBar BackButton）
+    float bw = 40.0f * scale, bh = kCapH * scale;
+    return RectF(4.0f * scale, 0.0f, bw, bh);
+}
+
 int App::CaptionButtonAt(float x, float y) const {
     float s = FzMx(0.001f, dpiScale_);
     if (y < 0.0f || y >= kCapH * s) return -1;
@@ -355,13 +361,32 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
     // ---- 背景 ----
     r.FillRect(RectF(0, 0, ClientWidth(), tbH), bg);
     r.DrawLine(0, tbH, ClientWidth(), tbH, 1.0f * s, stroke);
-    // ---- 标题文字（避开右侧按钮区）----
+
+    // ---- 后退按钮（最左，ChevronLeft 旋转 +90° 朝左）----
+    {
+        RectF br = BackButtonRect(s);
+        bool hov = (mouseIn_ && br.Contains(mouseDipX_, mouseDipY_)) && !titleBarDown_ && backEnabled_;
+        bool prs = (titleBarDown_ && titleBarBtn_ == -2);
+        if ((hov || prs) && backEnabled_) {
+            r.FillRect(br, prs ? prsBg : hovBg);
+        }
+        Color g = backEnabled_ ? text : th.TextDisabled();
+        float cx = br.CenterX(), cy = br.CenterY();
+        float gw = 8.0f * s, gh = 8.0f * s;   // chevron 臂长
+        // 朝左的 "<"：从右上/右下向左侧顶点收敛
+        r.DrawLine(cx + gw * 0.5f, cy - gh * 0.5f, cx - gw * 0.5f, cy, 1.4f * s, g);
+        r.DrawLine(cx - gw * 0.5f, cy, cx + gw * 0.5f, cy + gh * 0.5f, 1.4f * s, g);
+    }
+
+    // ---- 标题文字（避开左侧 back 区 + 右侧按钮区）----
+    float titleLeft = 44.0f * s;   // back 按钮区之后
     float btnLeft = ClientWidth() - 3 * kCapBw * s;
-    if (btnLeft > 8.0f * s) {
-        r.DrawText(L"Modern Design", 12.0f * s, 0.0f, btnLeft - 16.0f * s, tbH,
+    if (btnLeft > titleLeft + 8.0f * s) {
+        r.DrawText(L"Modern Design", titleLeft, 0.0f, btnLeft - 16.0f * s, tbH,
                    L"Segoe UI", 12.0f * s, DWRITE_FONT_WEIGHT_NORMAL, text,
                    DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
     }
+
     // ---- 三个控制按钮：hover/pressed 底 + 4×10 字形线 ----
     float glyphW = 10.0f * s, glyphH = 10.0f * s;
     for (int w = 0; w < 3; ++w) {
@@ -542,9 +567,12 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
             pt.y = GET_Y_LPARAM(l);
             ScreenToClient(hwnd_, &pt);
             if (pt.y >= 0 && pt.y < titleBarPx_) {
-                int btn = CaptionButtonAt(static_cast<float>(pt.x) / dpiScale_,
-                                          static_cast<float>(pt.y) / dpiScale_);
+                float bx = static_cast<float>(pt.x) / dpiScale_;
+                float by = static_cast<float>(pt.y) / dpiScale_;
+                int btn = CaptionButtonAt(bx, by);
                 if (btn >= 0) return HTCLIENT;   // 标题按钮：走 WM_LBUTTON*
+                if (backEnabled_ && BackButtonRect(dpiScale_).Contains(bx, by))
+                    return HTCLIENT;             // 后退按钮：走 WM_LBUTTON*
                 return HTCAPTION;                // 标题栏其余：拖拽/双击最大化
             }
         }
@@ -622,9 +650,12 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
         int cb = (hwnd_ && !AppIsZoomed(hwnd_))
                      ? CaptionButtonAt(x, y) : -1;
-        if (cb >= 0) {
+        int backHit = -1;
+        if (cb < 0 && backEnabled_ && BackButtonRect(dpiScale_).Contains(x, y))
+            backHit = -2;
+        if (cb >= 0 || backHit >= 0) {
             titleBarDown_ = true;
-            titleBarBtn_ = cb;
+            titleBarBtn_ = (cb >= 0) ? cb : -2;
             MarkDirty();
             return 0;   // 标题按钮：不转发给页面
         }
@@ -638,14 +669,14 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
         float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
         if (titleBarDown_) {
-            int releaseOn = CaptionButtonAt(x, y);
             int pressed = titleBarBtn_;
             titleBarDown_ = false;
             titleBarBtn_ = -1;
-            if (releaseOn >= 0 && releaseOn == pressed) {
+            if (pressed >= 0 && CaptionButtonAt(x, y) == pressed) {
                 HandleCaptionButton(pressed);
-                MarkDirty();
-                return 0;
+            } else if (pressed == -2 && backEnabled_ &&
+                       BackButtonRect(dpiScale_).Contains(x, y)) {
+                if (onBackRequested_) onBackRequested_();
             }
             MarkDirty();
             return 0;

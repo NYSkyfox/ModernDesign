@@ -45,6 +45,12 @@ public:
     const Theme& GetTheme() const { return theme_; }
     void ToggleTheme();
 
+    // 标题栏后退按钮（最左侧，对齐 WinUI 3 TitleBar BackButton）
+    void SetBackEnabled(bool e) { backEnabled_ = e; }
+    bool IsBackEnabled() const { return backEnabled_; }
+    void SetBackRequestedCallback(std::function<void()> cb) { onBackRequested_ = std::move(cb); }
+
+
     // 子类重写点
 protected:
     // 布局（尺寸/DPI 变化时调用，DIP 坐标）
@@ -95,6 +101,7 @@ private:
     RectF CaptionButtonRect(int which, float scale) const;   // 0=min 1=max 2=close
     int   CaptionButtonAt(float x, float y) const;           // DIP，-1 无
     void  HandleCaptionButton(int which);
+    RectF BackButtonRect(float scale) const;
 
     // 消息循环辅助
     static void RequestQuit(HWND hwnd);
@@ -113,7 +120,9 @@ private:
     bool  mouseIn_ = false;            // 指针在客户区内
     float mouseDipX_ = 0.0f, mouseDipY_ = 0.0f;
     bool  titleBarDown_ = false;       // 指针在标题栏按下
-    int   titleBarBtn_ = -1;           // 按下的标题按钮（0 min/1 max/2 close）
+    int   titleBarBtn_ = -1;           // 按下的标题按钮（0 min/1 max/2 close/-2 back）
+    bool  backEnabled_ = true;         // 后退按钮是否可用
+    std::function<void()> onBackRequested_;
     ULONGLONG lastFrameMs_ = 0;
     ULONGLONG lastThemePollMs_ = 0;
     bool currentLight_ = true;

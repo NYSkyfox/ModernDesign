@@ -163,12 +163,29 @@ private:
         pageMap_ = { -1, 0, 1, -1, -1, 0, 0, 0, 0, -1, 2 };
         nav_.SetSelectedIndex(2);            // 默认停在 Expander 页
         current_ = 1;
-        nav_.SetBackRequestedCallback([this] {  // 后退按钮：演示回 Home
-            nav_.SetSelectedIndex(0);
+        prevSel_ = 2;
+        SetBackEnabled(false);
+        // 后退按钮（标题栏最左）：回退上一次选择的导航项
+        SetBackRequestedCallback([this] {
+            if (navBackStack_.empty()) return;
+            int target = navBackStack_.back();
+            navBackStack_.pop_back();
+            navProg_ = true;
+            nav_.SetSelectedIndex(target);   // 会触发 selection 回调同步 current_
+            navProg_ = false;
+            prevSel_ = target;
+            SetBackEnabled(!navBackStack_.empty());
+            Invalidate();
         });
         nav_.SetSelectionCallback([this](int i) {
             int p = (i >= 0 && i < static_cast<int>(pageMap_.size())) ? pageMap_[i] : -1;
             if (p >= 0) { current_ = p; Invalidate(); }
+            // 前进导航项才入栈（后退由 back 回调处理，用 navProg_ 抑制重入）
+            if (!navProg_ && i != prevSel_ && i >= 0) {
+                navBackStack_.push_back(prevSel_);
+                prevSel_ = i;
+                SetBackEnabled(true);
+            }
         });
 
         // 各页面自绑定
@@ -356,6 +373,9 @@ private:
     int current_ = 0;
     NavigationView nav_;
     std::vector<int> pageMap_;
+    std::vector<int> navBackStack_;   // 标题栏后退按钮：前进导航项栈
+    int prevSel_ = -1;
+    bool navProg_ = false;            // back 回调驱动 SetSelectedIndex 时的重入抑制
 
     // 跨页全局浮层 / 弹窗（最顶层）
     ContentDialog dialog_;

@@ -83,11 +83,6 @@ public:
     void SetSelectedIndex(int i);
     void SetSelectionCallback(std::function<void(int)> cb) { onSelection_ = std::move(cb); }
 
-    // ---- 后退按钮（左上角，hamburger 上方；对齐 WinUI 3 NavigationBackButton）----
-    void SetBackEnabled(bool e) { backEnabled_ = e; }
-    bool IsBackEnabled() const { return backEnabled_; }
-    void SetBackRequestedCallback(std::function<void()> cb) { onBackRequested_ = std::move(cb); }
-
     bool IsGroupExpanded(int groupIndex) const;
     void SetGroupExpanded(int groupIndex, bool expanded);
 
@@ -129,7 +124,6 @@ private:
     float IndicatorTargetX() const;
     float IndicatorTargetY() const;
     RectF HamburgerRect() const;
-    RectF BackRect() const;
     RectF TopBarRect() const;
     RectF PlacedRect(int i) const;
 
@@ -168,15 +162,9 @@ private:
     int  hotIndex_ = -1;
     bool hamburgerHot_ = false;
     bool hamburgerPressed_ = false;
-    bool backHot_ = false;
-    bool backPressed_ = false;
     int  pressIndex_ = -1;
     float hotT_ = 0.0f;        // hover 淡入进度
     float hamburgerT_ = 0.0f;
-    float backT_ = 0.0f;
-
-    bool backEnabled_ = true;              // 后退按钮是否可用（不可用=灰色）
-    std::function<void()> onBackRequested_;
 
     std::vector<Placed> placed_;
 
@@ -186,9 +174,7 @@ private:
     static constexpr float kPanePad    = 4.0f;    // 面板 padding 4px
     static constexpr float kHamW       = 40.0f;   // hamburger 宽
     static constexpr float kHamH       = 36.0f;   // hamburger 高
-    static constexpr float kHamRowH    = 40.0f;   // command row（back + hamburger 同行）
-    static constexpr float kBackH      = 36.0f;   // 后退按钮高（= NavigationBackButtonHeight）
-    static constexpr float kCmdGap     = 4.0f;    // back 与 hamburger 间距
+    static constexpr float kHamRowH    = 40.0f;   // command row（hamburger 独占一行）
     static constexpr float kItemH      = 36.0f;   // 菜单项高
     static constexpr float kItemM      = 2.0f;    // 菜单项上下 margin
     static constexpr float kItemPadX   = 12.0f;   // 菜单项左右 padding
