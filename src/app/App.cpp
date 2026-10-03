@@ -365,10 +365,12 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
         }
         Color g = backEnabled_ ? text : th.TextDisabled();
         float cx = br.CenterX(), cy = br.CenterY();
-        float gw = 8.0f * s, gh = 8.0f * s;   // chevron 臂长
-        // 朝左的 "<"：从右上/右下向左侧顶点收敛
-        r.DrawLine(cx + gw * 0.5f, cy - gh * 0.5f, cx - gw * 0.5f, cy, 1.4f * s, g);
-        r.DrawLine(cx - gw * 0.5f, cy, cx + gw * 0.5f, cy + gh * 0.5f, 1.4f * s, g);
+        float gw = 8.0f * s, gh = 8.0f * s;   // 箭头尺寸
+        // 朝左的箭头 "←"：水平轴杆 + 左侧箭头头部（上/下两臂向左顶点收敛）
+        float tipX = cx - gw * 0.5f;           // 左顶点
+        r.DrawLine(tipX, cy, cx + gw * 0.5f, cy, 1.4f * s, g);                          // 轴杆
+        r.DrawLine(cx + gw * 0.5f, cy - gh * 0.5f, tipX, cy, 1.4f * s, g);              // 上臂
+        r.DrawLine(cx + gw * 0.5f, cy + gh * 0.5f, tipX, cy, 1.4f * s, g);              // 下臂
     }
 
     // ---- 标题文字（避开左侧 back 区 + 右侧按钮区）----
@@ -397,9 +399,22 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
         if (w == 0) {      // 最小化：底部横线
             r.DrawLine(cx - glyphW * 0.5f, cy + glyphH * 0.5f,
                        cx + glyphW * 0.5f, cy + glyphH * 0.5f, 1.0f * s, g);
-        } else if (w == 1) {  // 最大化：正方形
-            r.StrokeRect(RectF(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
-                               glyphW, glyphH), 1.0f * s, g);
+        } else if (w == 1) {  // 最大化 / 还原
+            float g2 = glyphW * 0.7f, g2h = glyphH * 0.7f;   // 还原：双方块略小
+            if (hwnd_ && AppIsZoomed(hwnd_)) {
+                // 还原：前（右上）后（左下）两个重叠方框
+                float ox = g2 * 0.28f, oy = g2h * 0.28f;
+                // 前框（完整）
+                r.StrokeRect(RectF(cx - g2 * 0.5f + ox, cy - g2h * 0.5f - oy,
+                                   g2, g2h), 1.0f * s, g);
+                // 后框：只画左 + 下两段（被前框遮挡的右上省略）
+                float bx = cx - g2 * 0.5f - ox, by = cy - g2h * 0.5f + oy;
+                r.DrawLine(bx, by + g2h, bx, by, 1.0f * s, g);             // 左竖
+                r.DrawLine(bx, by + g2h, bx + g2, by + g2h, 1.0f * s, g);  // 下横
+            } else {
+                r.StrokeRect(RectF(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
+                                   glyphW, glyphH), 1.0f * s, g);
+            }
         } else {           // 关闭：X
             r.DrawLine(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
                        cx + glyphW * 0.5f, cy + glyphH * 0.5f, 1.0f * s, g);
