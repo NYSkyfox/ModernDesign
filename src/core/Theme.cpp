@@ -52,7 +52,7 @@ void Theme::SetAccent(float r, float g, float b) {
 }
 
 void Theme::ApplyDark() {
-    windowBgR = windowBgG = windowBgB = 0.0f;          // #000000
+    windowBgR = windowBgG = windowBgB = 0.125f;          // #202020 (WinUI 3 dark Mica base)
     contentBgR = contentBgG = contentBgB = 0.078f;     // #141414
     cardBgR = cardBgG = cardBgB = 0.110f;             // #1C1C1C
     cardBorderR = cardBorderG = cardBorderB = 0.267f; // #444444
