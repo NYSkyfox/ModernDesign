@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "app/App.h"
 #include <mmsystem.h>   // timeBeginPeriod / timeEndPeriod
+#include "utils/FluentIcons.h"
 // 老 SDK 的 dwmapi.h 可能未定义 DWMWA_USE_IMMERSIVE_DARK_MODE（Win10 18985+ 引入）
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
@@ -364,13 +365,8 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
             r.FillRect(br, prs ? prsBg : hovBg);
         }
         Color g = backEnabled_ ? text : th.TextDisabled();
-        float cx = br.CenterX(), cy = br.CenterY();
-        float gw = 8.0f * s, gh = 8.0f * s;   // 箭头尺寸
-        // 朝左的箭头 "←"：水平轴杆 + 左侧箭头头部（上/下两臂向左顶点收敛）
-        float tipX = cx - gw * 0.5f;           // 左顶点
-        r.DrawLine(tipX, cy, cx + gw * 0.5f, cy, 1.4f * s, g);                          // 轴杆
-        r.DrawLine(cx + gw * 0.5f, cy - gh * 0.5f, tipX, cy, 1.4f * s, g);              // 上臂
-        r.DrawLine(cx + gw * 0.5f, cy + gh * 0.5f, tipX, cy, 1.4f * s, g);              // 下臂
+        // 朝左 chevron：Fluent 矢量 path（ChevronLeft = ChevronDown 旋转 +90° 顺时针）
+        DrawFluentIconCentered(r, FluentIcon::ChevronLeft, br, 14.0f * s, g, 3.14159265f / 2.0f);
     }
 
     // ---- 标题文字（避开左侧 back 区 + 右侧按钮区）----
