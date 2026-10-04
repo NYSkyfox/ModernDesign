@@ -611,7 +611,9 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
     // ---- 5) indicator ----
     if (selected_ >= 0 && selected_ < static_cast<int>(items_.size())) {
         const RectF sr = placed_[selected_].rect;
-        if (!sr.IsEmpty() && items_[selected_].kind == ItemKind::Item) {
+        if (!sr.IsEmpty()
+            && (items_[selected_].kind == ItemKind::Item
+                || items_[selected_].kind == ItemKind::Settings)) {
             if (mode_ == DisplayMode::Top) {
                 // 规格：Top 模式 bottom 4px、高 3px、长 16px（居中于选中项）
                 const float w = kIndLen * s;
