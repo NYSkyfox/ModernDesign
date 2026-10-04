@@ -318,14 +318,14 @@ RectF App::CaptionButtonRect(int which, float scale) const {
 }
 
 RectF App::BackButtonRect(float scale) const {
-    // 标题栏最左：4px 左 pad + 40 宽（对齐 WinUI 3 TitleBar BackButton）
-    float bw = 40.0f * scale, bh = kCapH * scale;
-    return RectF(4.0f * scale, 0.0f, bw, bh);
+    // 标题栏最左：盒 8..40（宽 32），图标中心 24 —— 对齐导航窗格图标列（pad4+kItemPadX12+8）
+    float bw = 32.0f * scale, bh = kCapH * scale;
+    return RectF(8.0f * scale, 0.0f, bw, bh);
 }
 RectF App::PaneToggleButtonRect(float scale) const {
-    // back 右侧：44px 起，40 宽（对齐 WinUI 3 TitleBar PaneToggleButton）
-    float bw = 40.0f * scale, bh = kCapH * scale;
-    return RectF(44.0f * scale, 0.0f, bw, bh);
+    // back 右侧紧贴：盒 40..72（宽 32），图标 48..64 —— 左缘对齐导航窗格文字列（x=48）
+    float bw = 32.0f * scale, bh = kCapH * scale;
+    return RectF(40.0f * scale, 0.0f, bw, bh);
 }
 
 int App::CaptionButtonAt(float x, float y) const {
@@ -382,7 +382,7 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
     }
 
     // ---- 标题文字（back + hamburger 区之后）----
-    float titleLeft = 88.0f * s;
+    float titleLeft = 84.0f * s;
     float btnLeft = ClientWidth() - 3 * kCapBw * s;
     if (btnLeft > titleLeft + 8.0f * s) {
         r.DrawText(L"Modern Design", titleLeft, 0.0f, btnLeft - 16.0f * s, tbH,
