@@ -37,20 +37,27 @@ jobs:
       - name: Run + Screenshot
         shell: pwsh
         run: |
+          # ---- 每页一张（light）----
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1
-          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode compact -OutName screenshot_compact.png
-          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode top     -OutName screenshot_top.png
-          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode minimal -OutName screenshot_minimal.png
-          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -ShowDialog -OutName screenshot_dialog.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page buttons   -OutName screenshot_buttons.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page selection -OutName screenshot_selection.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page sliders   -OutName screenshot_sliders.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page expander  -OutName screenshot_expander.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page card      -OutName screenshot_card.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup flyout  -OutName screenshot_flyout.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup menu    -OutName screenshot_menu.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup tooltip -OutName screenshot_tooltip.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -ShowDialog    -OutName screenshot_dialog.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page settings -OutName screenshot_settings.png
-           # ---- 深色模式（-Dark 传 -dark 给 exe，系统标题栏也转深）----
-           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -OutName screenshot_dark.png
-           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -NavMode top -OutName screenshot_dark_top.png
-           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -Page settings -OutName screenshot_dark_settings.png
-           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -ShowDialog -OutName screenshot_dark_dialog.png
+          # ---- 导航模式 ----
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode compact -OutName screenshot_compact.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode top     -OutName screenshot_top.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -NavMode minimal -OutName screenshot_minimal.png
+          # ---- 深色模式（-Dark 传 -dark 给 exe，系统标题栏也转深）----
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -OutName screenshot_dark.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -NavMode top -OutName screenshot_dark_top.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -ShowDialog -OutName screenshot_dark_dialog.png
+          pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -Page settings -OutName screenshot_dark_settings.png
 
       - name: Version artifacts (sha7 + timestamp)
         shell: pwsh
@@ -65,6 +72,11 @@ jobs:
           if (Test-Path 'screenshot_compact.png') { Copy-Item 'screenshot_compact.png' "${ver}_compact.png" -Force }
           if (Test-Path 'screenshot_top.png')     { Copy-Item 'screenshot_top.png'     "${ver}_top.png" -Force }
           if (Test-Path 'screenshot_minimal.png') { Copy-Item 'screenshot_minimal.png' "${ver}_minimal.png" -Force }
+          if (Test-Path 'screenshot_buttons.png')  { Copy-Item 'screenshot_buttons.png'  "${ver}_buttons.png" -Force }
+          if (Test-Path 'screenshot_selection.png'){ Copy-Item 'screenshot_selection.png' "${ver}_selection.png" -Force }
+          if (Test-Path 'screenshot_sliders.png')  { Copy-Item 'screenshot_sliders.png'  "${ver}_sliders.png" -Force }
+          if (Test-Path 'screenshot_expander.png') { Copy-Item 'screenshot_expander.png' "${ver}_expander.png" -Force }
+          if (Test-Path 'screenshot_card.png')     { Copy-Item 'screenshot_card.png'     "${ver}_card.png" -Force }
           if (Test-Path 'screenshot_dialog.png')  { Copy-Item 'screenshot_dialog.png'  "${ver}_dialog.png" -Force }
           if (Test-Path 'screenshot_flyout.png')  { Copy-Item 'screenshot_flyout.png'  "${ver}_flyout.png" -Force }
           if (Test-Path 'screenshot_menu.png')    { Copy-Item 'screenshot_menu.png'    "${ver}_menu.png" -Force }

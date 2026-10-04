@@ -7,7 +7,13 @@ add_executable(DemoAppDemo main.cpp
     DemoApp.h
     DemoPage.h
     pages/HomePage.cpp
+    pages/ButtonsPage.cpp
+    pages/SelectionPage.cpp
+    pages/SlidersPage.cpp
     pages/ExpanderPage.cpp
+    pages/CardPage.cpp
+    pages/PopupsPage.cpp
+    pages/DialogPage.cpp
     pages/SettingsPage.cpp
 )
 

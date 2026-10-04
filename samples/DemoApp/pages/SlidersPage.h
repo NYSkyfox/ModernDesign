@@ -1,18 +1,19 @@
 #pragma once
-// ExpanderPage — 可折叠容器
+// SlidersPage — Slider + ProgressBar + ProgressRing
 #include "DemoPage.h"
-#include "controls/Expander.h"
-#include "controls/ToggleSwitch.h"
+#include "controls/Slider.h"
+#include "controls/ProgressBar.h"
+#include "controls/ProgressRing.h"
 
 using namespace ModernDesign::Controls;
 class DemoWindow;
 
 namespace ModernDesign::Demo {
 
-class ExpanderPage : public DemoPage {
+class SlidersPage : public DemoPage {
 public:
-    explicit ExpanderPage(DemoWindow* owner) : DemoPage(owner) {}
-    std::wstring Title() const override { return L"Expander"; }
+    explicit SlidersPage(DemoWindow* owner) : DemoPage(owner) {}
+    std::wstring Title() const override { return L"Sliders"; }
     void Bind() override;
     void Layout() override;
     bool Update(float dt) override;
@@ -23,8 +24,9 @@ public:
     void OnMouseLeave() override;
 
 private:
-    Expander expA_, expB_;
-    ToggleSwitch togA_, togB_;
+    Slider slider_;
+    ProgressBar progBar_;
+    ProgressRing progRing_;
 };
 
 } // namespace ModernDesign::Demo

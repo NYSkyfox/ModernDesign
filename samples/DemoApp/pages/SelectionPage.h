@@ -1,7 +1,8 @@
 #pragma once
-// ExpanderPage — 可折叠容器
+// SelectionPage — CheckBox + RadioButton + ToggleSwitch
 #include "DemoPage.h"
-#include "controls/Expander.h"
+#include "controls/CheckBox.h"
+#include "controls/RadioButton.h"
 #include "controls/ToggleSwitch.h"
 
 using namespace ModernDesign::Controls;
@@ -9,10 +10,10 @@ class DemoWindow;
 
 namespace ModernDesign::Demo {
 
-class ExpanderPage : public DemoPage {
+class SelectionPage : public DemoPage {
 public:
-    explicit ExpanderPage(DemoWindow* owner) : DemoPage(owner) {}
-    std::wstring Title() const override { return L"Expander"; }
+    explicit SelectionPage(DemoWindow* owner) : DemoPage(owner) {}
+    std::wstring Title() const override { return L"Selection"; }
     void Bind() override;
     void Layout() override;
     bool Update(float dt) override;
@@ -23,8 +24,9 @@ public:
     void OnMouseLeave() override;
 
 private:
-    Expander expA_, expB_;
-    ToggleSwitch togA_, togB_;
+    CheckBox chkChecked_, chkUnchecked_, chkDisabled_;
+    RadioButton radioA_, radioB_, radioC_;
+    ToggleSwitch togOn_, togOff_, togDisabled_;
 };
 
 } // namespace ModernDesign::Demo

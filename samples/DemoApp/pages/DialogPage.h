@@ -1,19 +1,17 @@
 #pragma once
-// ExpanderPage — 可折叠容器
+// DialogPage — ContentDialog
 #include "DemoPage.h"
-#include "controls/Expander.h"
-#include "controls/ToggleSwitch.h"
+#include "controls/Button.h"
 
 using namespace ModernDesign::Controls;
 class DemoWindow;
 
 namespace ModernDesign::Demo {
 
-class ExpanderPage : public DemoPage {
+class DialogPage : public DemoPage {
 public:
-    explicit ExpanderPage(DemoWindow* owner) : DemoPage(owner) {}
-    std::wstring Title() const override { return L"Expander"; }
-    void Bind() override;
+    explicit DialogPage(DemoWindow* owner) : DemoPage(owner) {}
+    std::wstring Title() const override { return L"Dialog"; }
     void Layout() override;
     bool Update(float dt) override;
     void Draw() override;
@@ -21,10 +19,6 @@ public:
     void OnMouseDown(float x, float y) override;
     void OnMouseUp(float x, float y) override;
     void OnMouseLeave() override;
-
-private:
-    Expander expA_, expB_;
-    ToggleSwitch togA_, togB_;
 };
 
 } // namespace ModernDesign::Demo

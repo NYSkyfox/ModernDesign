@@ -1,6 +1,7 @@
-// HomePage — 基础控件合集
+// HomePage — 框架概览
 #include "HomePage.h"
 #include "DemoApp.h"
+#include "utils/FluentIcons.h"
 #include <shellapi.h>
 
 using namespace ModernDesign;
@@ -9,78 +10,62 @@ using namespace ModernDesign::Controls;
 namespace ModernDesign::Demo {
 
 void HomePage::Bind() {
-    homeBtnStd_.SetText(L"Standard");
-    homeBtnStd_.SetVariant(ButtonVariant::Standard);
-    homeBtnAcc_.SetText(L"Accent");
-    homeBtnAcc_.SetVariant(ButtonVariant::Accent);
+    cardInput_.SetHeader(L"Input");
+    cardInput_.SetDescription(L"Buttons, Selection, Sliders");
+    cardInput_.SetHeaderIcon(static_cast<int>(FluentIcon::Checkmark));
+    cardInput_.SetClickable(true);
+    cardInput_.SetActionIconVisible(true);
 
-    homeChk_.SetText(L"CheckBox checked");
-    homeChk_.SetChecked(true);
-    homeTog_.SetText(L"Toggle on");
-    homeTog_.SetIsOn(true);
+    cardContainer_.SetHeader(L"Container");
+    cardContainer_.SetDescription(L"Expander, Card, Popups");
+    cardContainer_.SetHeaderIcon(static_cast<int>(FluentIcon::Grid));
+    cardContainer_.SetClickable(true);
+    cardContainer_.SetActionIconVisible(true);
 
-    homeRadioA_.SetText(L"RadioButton unchecked");
-    homeRadioB_.SetText(L"RadioButton checked");
-    homeRadioB_.SetSelected(true);
+    cardPopup_.SetHeader(L"Dialog");
+    cardPopup_.SetDescription(L"ContentDialog");
+    cardPopup_.SetHeaderIcon(static_cast<int>(FluentIcon::Info));
+    cardPopup_.SetClickable(true);
+    cardPopup_.SetActionIconVisible(true);
 
-    homeProg_.SetProgress(0.6f);
-
-    homeLinkA_.SetText(L"Learn more about Modern Design");
-    homeLinkA_.SetNavigateUri(L"https://github.com/NYSkyfox/ModernDesign");
-    homeLinkA_.SetClickCallback([] {
+    linkRepo_.SetText(L"github.com/NYSkyfox/ModernDesign");
+    linkRepo_.SetNavigateUri(L"https://github.com/NYSkyfox/ModernDesign");
+    linkRepo_.SetClickCallback([] {
         ShellExecuteW(nullptr, L"open", L"https://github.com/NYSkyfox/ModernDesign",
                       nullptr, nullptr, SW_SHOWNORMAL);
     });
-    homeLinkB_.SetText(L"Unavailable link");
-    homeLinkB_.SetEnabled(false);
 }
 
 void HomePage::Layout() {
     float s = owner_->DpiScale();
     float x = owner_->ContX(), y = owner_->PageTop();
+    float w = owner_->ContW();
+    const float cardH = 72.0f, cardGap = 4.0f;
 
-    homeBtnStd_.SetBounds(RectF(x, y, 96.0f * s, kRowHeight * s));
-    homeBtnAcc_.SetBounds(RectF(x + 108.0f * s, y, 96.0f * s, kRowHeight * s));
-    owner_->dlgBtn_.SetBounds(RectF(x + 216.0f * s, y, 120.0f * s, kRowHeight * s));
-    y += kRowHeight * s + kGroupGap * s;
+    // 简介文字
+    Renderer& r = *owner_;
+    const Theme& t = owner_->GetTheme();
+    owner_->DrawText(L"Pure C++ / Win32 / Direct2D", x, y, w, 20.0f * s,
+             L"Segoe UI", 12.0f * s, DWRITE_FONT_WEIGHT_NORMAL, t.TextSecondary(),
+             DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+    y += 28.0f * s;
 
-    homeChk_.SetBounds(RectF(x, y, owner_->ContW(), kRowHeight * s));
-    y += kRowHeight * s + kRowGap * s;
+    // 三个入口卡片
+    cardInput_.SetBounds(RectF(x, y, w, cardH * s));
+    y += (cardH + cardGap) * s;
+    cardContainer_.SetBounds(RectF(x, y, w, cardH * s));
+    y += (cardH + cardGap) * s;
+    cardPopup_.SetBounds(RectF(x, y, w, cardH * s));
+    y += (cardH + cardGap) * s + 12.0f * s;
 
-    homeTog_.SetBounds(RectF(x, y, owner_->ContW(), kRowHeight * s));
-    y += kRowHeight * s + kGroupGap * s;
-
-    homeRadioA_.SetBounds(RectF(x, y, owner_->ContW(), kRowHeight * s));
-    y += kRowHeight * s + kRowGap * s;
-    homeRadioB_.SetBounds(RectF(x, y, owner_->ContW(), kRowHeight * s));
-    y += kRowHeight * s + kGroupGap * s;
-
-    homeSlider_.SetBounds(RectF(x, y, owner_->ContW(), kRowHeight * s));
-    y += kRowHeight * s + kGroupGap * s;
-
-    homeProg_.SetBounds(RectF(x, y, owner_->ContW(), 12.0f * s));
-    y += 12.0f * s + kGroupGap * s;
-
-    homeLinkA_.SetBounds(RectF(x, y, homeLinkA_.MeasureWidth(*owner_, s), kRowHeight * s));
-    homeLinkB_.SetBounds(RectF(x + 28.0f * s, y, homeLinkB_.MeasureWidth(*owner_, s), kRowHeight * s));
-    y += kRowHeight * s + kGroupGap * s;
-
-    // 浮出层触发按钮（Flyout / MenuFlyout / ToolTip）
-    owner_->flyBtn_.SetBounds(RectF(x, y, 118.0f * s, kRowHeight * s));
-    owner_->menuBtn_.SetBounds(RectF(x + 130.0f * s, y, 118.0f * s, kRowHeight * s));
-    owner_->tipHost_.SetBounds(RectF(x + 260.0f * s, y, 150.0f * s, kRowHeight * s));
+    // 仓库链接
+    linkRepo_.SetBounds(RectF(x, y, linkRepo_.MeasureWidth(*owner_, s), kRowHeight * s));
 }
 
 bool HomePage::Update(float dt) {
     bool anim = false;
-    anim |= homeBtnStd_.Update(dt); anim |= homeBtnAcc_.Update(dt);
-    anim |= homeChk_.Update(dt); anim |= homeTog_.Update(dt);
-    anim |= homeRadioA_.Update(dt); anim |= homeRadioB_.Update(dt);
-    anim |= homeSlider_.Update(dt);
-    anim |= homeLinkA_.Update(dt); anim |= homeLinkB_.Update(dt);
-    anim |= owner_->dlgBtn_.Update(dt);
-    anim |= owner_->flyBtn_.Update(dt); anim |= owner_->menuBtn_.Update(dt);
-    anim |= owner_->tipHost_.Update(dt);
+    anim |= cardInput_.Update(dt); anim |= cardContainer_.Update(dt); anim |= cardPopup_.Update(dt);
+    anim |= linkRepo_.Update(dt);
     return anim;
 }
 
@@ -88,48 +73,25 @@ void HomePage::Draw() {
     Renderer& r = *owner_;
     const Theme& t = owner_->GetTheme();
     float s = owner_->DpiScale();
-    homeBtnStd_.Draw(r, t, s); homeBtnAcc_.Draw(r, t, s);
-    owner_->dlgBtn_.Draw(r, t, s);
-    homeChk_.Draw(r, t, s); homeTog_.Draw(r, t, s);
-    homeRadioA_.Draw(r, t, s); homeRadioB_.Draw(r, t, s);
-    homeSlider_.Draw(r, t, s); homeProg_.Draw(r, t, s);
-    homeLinkA_.Draw(r, t, s); homeLinkB_.Draw(r, t, s);
-    owner_->flyBtn_.Draw(r, t, s); owner_->menuBtn_.Draw(r, t, s);
-    owner_->tipHost_.Draw(r, t, s);
+    cardInput_.Draw(r, t, s); cardContainer_.Draw(r, t, s); cardPopup_.Draw(r, t, s);
+    linkRepo_.Draw(r, t, s);
 }
 
 void HomePage::OnMouseMove(float x, float y) {
-    homeBtnStd_.OnMouseMove(x, y); homeBtnAcc_.OnMouseMove(x, y);
-    homeChk_.OnMouseMove(x, y); homeTog_.OnMouseMove(x, y);
-    homeRadioA_.OnMouseMove(x, y); homeRadioB_.OnMouseMove(x, y);
-    homeSlider_.OnMouseMove(x, y);
-    homeLinkA_.OnMouseMove(x, y); homeLinkB_.OnMouseMove(x, y);
-    owner_->flyBtn_.OnMouseMove(x, y); owner_->menuBtn_.OnMouseMove(x, y);
-    owner_->tipHost_.OnMouseMove(x, y);
+    cardInput_.OnMouseMove(x, y); cardContainer_.OnMouseMove(x, y); cardPopup_.OnMouseMove(x, y);
+    linkRepo_.OnMouseMove(x, y);
 }
 void HomePage::OnMouseDown(float x, float y) {
-    homeBtnStd_.OnMouseDown(x, y); homeBtnAcc_.OnMouseDown(x, y);
-    homeChk_.OnMouseDown(x, y); homeTog_.OnMouseDown(x, y);
-    homeRadioA_.OnMouseDown(x, y); homeRadioB_.OnMouseDown(x, y);
-    homeSlider_.OnMouseDown(x, y);
-    homeLinkA_.OnMouseDown(x, y); homeLinkB_.OnMouseDown(x, y);
-    owner_->flyBtn_.OnMouseDown(x, y); owner_->menuBtn_.OnMouseDown(x, y); owner_->tipHost_.OnMouseDown(x, y);
+    cardInput_.OnMouseDown(x, y); cardContainer_.OnMouseDown(x, y); cardPopup_.OnMouseDown(x, y);
+    linkRepo_.OnMouseDown(x, y);
 }
 void HomePage::OnMouseUp(float x, float y) {
-    homeBtnStd_.OnMouseUp(x, y); homeBtnAcc_.OnMouseUp(x, y);
-    homeChk_.OnMouseUp(x, y); homeTog_.OnMouseUp(x, y);
-    homeRadioA_.OnMouseUp(x, y); homeRadioB_.OnMouseUp(x, y);
-    homeSlider_.OnMouseUp(x, y);
-    homeLinkA_.OnMouseUp(x, y); homeLinkB_.OnMouseUp(x, y);
-    owner_->flyBtn_.OnMouseUp(x, y); owner_->menuBtn_.OnMouseUp(x, y); owner_->tipHost_.OnMouseUp(x, y);
+    cardInput_.OnMouseUp(x, y); cardContainer_.OnMouseUp(x, y); cardPopup_.OnMouseUp(x, y);
+    linkRepo_.OnMouseUp(x, y);
 }
 void HomePage::OnMouseLeave() {
-    homeBtnStd_.OnMouseLeave(); homeBtnAcc_.OnMouseLeave();
-    homeChk_.OnMouseLeave(); homeTog_.OnMouseLeave();
-    homeRadioA_.OnMouseLeave(); homeRadioB_.OnMouseLeave();
-    homeSlider_.OnMouseLeave();
-    homeLinkA_.OnMouseLeave(); homeLinkB_.OnMouseLeave();
-    owner_->flyBtn_.OnMouseLeave(); owner_->menuBtn_.OnMouseLeave(); owner_->tipHost_.OnMouseLeave();
+    cardInput_.OnMouseLeave(); cardContainer_.OnMouseLeave(); cardPopup_.OnMouseLeave();
+    linkRepo_.OnMouseLeave();
 }
 
 } // namespace ModernDesign::Demo

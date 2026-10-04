@@ -3,7 +3,7 @@
 // DemoWindow — 演示应用外壳（解耦架构）
 //
 // 职责：窗口生命周期 + 导航 + 跨页全局浮层（弹窗/浮出层）+ 页面宿主。
-// 各页面（Home / Expander / Settings）是独立类，见 pages/。
+// 各页面（见 pages/）是独立类，自治布局/绘制/输入/动画。
 // 页面通过 owner_(this) 访问本类的共享资源与几何。
 // ============================================================
 #include "pch.h"
@@ -18,7 +18,13 @@
 #include "utils/FluentIcons.h"
 #include "DemoPage.h"
 #include "pages/HomePage.h"
+#include "pages/ButtonsPage.h"
+#include "pages/SelectionPage.h"
+#include "pages/SlidersPage.h"
 #include "pages/ExpanderPage.h"
+#include "pages/CardPage.h"
+#include "pages/PopupsPage.h"
+#include "pages/DialogPage.h"
 #include "pages/SettingsPage.h"
 
 using namespace ModernDesign;
@@ -30,7 +36,7 @@ constexpr float kMargin = 28.0f;
 
 class DemoWindow : public App {
 public:
-    // ---- 页面路由（当前页 index：0=Home 1=Expander 2=Settings）----
+    // ---- 页面路由 ----
     Demo::DemoPage* Page(int i) { return page_[i]; }
     int CurrentPage() const { return current_; }
     const std::vector<int>& PageMap() const { return pageMap_; }
@@ -61,7 +67,13 @@ public:
 
     // 页面作为友元：可直接访问下方共享资源（flyBtn_/flyout_/tip_/nav_ 等）
     friend class ModernDesign::Demo::HomePage;
+    friend class ModernDesign::Demo::ButtonsPage;
+    friend class ModernDesign::Demo::SelectionPage;
+    friend class ModernDesign::Demo::SlidersPage;
     friend class ModernDesign::Demo::ExpanderPage;
+    friend class ModernDesign::Demo::CardPage;
+    friend class ModernDesign::Demo::PopupsPage;
+    friend class ModernDesign::Demo::DialogPage;
     friend class ModernDesign::Demo::SettingsPage;
 
 protected:
@@ -87,9 +99,7 @@ protected:
 
     bool OnUpdate(float dt) override {
         bool anim = nav_.Update(dt);
-        anim |= home_.Update(dt);
-        anim |= expander_.Update(dt);
-        anim |= settings_.Update(dt);
+        for (auto* p : pages()) anim |= p->Update(dt);
         anim |= dialog_.Update(dt);
         anim |= flyout_.Update(dt);
         anim |= menu_.Update(dt);
@@ -130,8 +140,6 @@ protected:
     }
 
     void OnThemeChanged() override {
-        home_.OnThemeChanged();
-        expander_.OnThemeChanged();
         settings_.OnThemeChanged();
     }
     void OnKeyDown(int vk) override {
@@ -142,28 +150,36 @@ protected:
     }
 
 private:
+    // ---- 页面数组（page_ index -> 页对象）----
+    // 0=Home 1=Buttons 2=Selection 3=Sliders 4=Expander 5=Card 6=Popups 7=Dialog 8=Settings
+    Demo::DemoPage** pages() { return page_; }
+    static constexpr int kPageCount = 9;
+
     // ---- 导航绑定（一次）----
+    // 导航项 -> 页 index（-1 = 不切页）
+    //  0 Home | 1 Input* 2 Buttons 3 Selection 4 Sliders
+    // | 5 Container* 6 Expander 7 Card | 8 Popups 9 Dialog | 10 Settings
     void BindNav() {
         static bool bound = false;
         if (bound) return;
         bound = true;
 
         nav_.SetPaneTitle(L"Modern Design");
-        nav_.AddHeader(L"Navigation");
-        nav_.AddItem({ L"Home", FluentIcon::Home });
-        nav_.AddItem({ L"Expander", FluentIcon::ChevronUpDown });
-        nav_.AddHeader(L"Controls");
-        nav_.AddGroup(L"Basics", FluentIcon::Grid,
-                      { { L"CheckBox" }, { L"ToggleSwitch" },
-                        { L"Slider" }, { L"RadioButton" } },
+        nav_.AddItem({ L"Home", FluentIcon::Home });                          // 0
+        nav_.AddGroup(L"Input", FluentIcon::Checkmark,                          // 1 (组头)
+                      { { L"Buttons" }, { L"Selection" }, { L"Sliders" } },     // 2 3 4
                       true);
-        nav_.AddSeparator();
-        nav_.SetSettings(L"Settings");
+        nav_.AddGroup(L"Container", FluentIcon::Grid,                            // 5 (组头)
+                      { { L"Expander" }, { L"Card" } },                          // 6 7
+                      true);
+        nav_.AddItem({ L"Popups", FluentIcon::Info });                          // 8
+        nav_.AddItem({ L"Dialog", FluentIcon::ChevronUpDown });                 // 9
+        nav_.SetSettings(L"Settings");                                          // 10
 
-        pageMap_ = { -1, 0, 1, -1, -1, 0, 0, 0, 0, -1, 2 };
-        nav_.SetSelectedIndex(2);            // 默认停在 Expander 页
-        current_ = 1;
-        prevSel_ = 2;
+        pageMap_ = { 0, -1, 1, 2, 3, -1, 4, 5, 6, 7, 8 };
+        nav_.SetSelectedIndex(0);            // 默认停在 Home 页
+        current_ = 0;
+        prevSel_ = 0;
         SetBackEnabled(false);
         // 标题栏汉堡按钮（back 右侧）：切换导航面板展开/收起
         SetPaneToggleCallback([this] {
@@ -195,7 +211,11 @@ private:
 
         // 各页面自绑定
         home_.Bind();
+        buttons_.Bind();
+        selection_.Bind();
+        sliders_.Bind();
         expander_.Bind();
+        card_.Bind();
         settings_.Bind();
 
         // 全局浮层/弹窗绑定
@@ -210,15 +230,21 @@ private:
             else if (m == L"minimal") nav_.SetDisplayMode(NavigationView::DisplayMode::LeftMinimal);
             else if (m == L"top")     nav_.SetDisplayMode(NavigationView::DisplayMode::Top);
         }
-        // 测试钩子：MODERNDESIGN_PAGE = home | expander | settings
+        // 测试钩子：MODERNDESIGN_PAGE = home|buttons|selection|sliders|expander|card|popups|dialog|settings
         {
             wchar_t pbuf[32] = {};
             if (GetEnvironmentVariableW(L"MODERNDESIGN_PAGE", pbuf, 32) > 0) {
                 std::wstring pg = pbuf;
                 int navIdx = -1; int page = -1;
-                if (pg == L"home")      { navIdx = 1; page = 0; }
-                else if (pg == L"expander")   { navIdx = 2; page = 1; }
-                else if (pg == L"settings")   { navIdx = 9; page = 2; }
+                if      (pg == L"home")      { navIdx = 0;  page = 0; }
+                else if (pg == L"buttons")   { navIdx = 2;  page = 1; }
+                else if (pg == L"selection") { navIdx = 3;  page = 2; }
+                else if (pg == L"sliders")   { navIdx = 4;  page = 3; }
+                else if (pg == L"expander")  { navIdx = 6;  page = 4; }
+                else if (pg == L"card")      { navIdx = 7;  page = 5; }
+                else if (pg == L"popups")    { navIdx = 8;  page = 6; }
+                else if (pg == L"dialog")    { navIdx = 9;  page = 7; }
+                else if (pg == L"settings")  { navIdx = 10; page = 8; }
                 if (page >= 0) {
                     nav_.SetSelectedIndex(navIdx);
                     current_ = page;
@@ -238,7 +264,7 @@ private:
 
         page_[current_]->Layout();
 
-        // 浮出层：全客户区 + 锚定触发按钮（触发按钮在 Home 页）
+        // 浮出层：全客户区 + 锚定触发按钮（触发按钮在 Popups 页）
         {
             const RectF full(0.0f, 0.0f, ClientWidth(), ClientHeight());
             flyout_.SetBounds(full);
@@ -318,8 +344,8 @@ private:
 
         wchar_t dbuf[8] = {};
         if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_DIALOG", dbuf, 8) > 0 && dbuf[0] == L'1') {
-            nav_.SetSelectedIndex(1);
-            current_ = 0;
+            nav_.SetSelectedIndex(9);
+            current_ = 7;
             dialog_.Show();
         }
     }
@@ -369,8 +395,8 @@ private:
         if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_TOOLTIP", b3, 8) > 0 && b3[0] == L'1')
             pendingPopup_ = 3;
         if (pendingPopup_ != 0) {
-            nav_.SetSelectedIndex(1);
-            current_ = 0;
+            nav_.SetSelectedIndex(8);
+            current_ = 6;
         }
     }
 
@@ -397,7 +423,15 @@ private:
 
     // 页面（一个文件一个类，自治布局/绘制/输入/动画）
     Demo::HomePage     home_{this};
+    Demo::ButtonsPage  buttons_{this};
+    Demo::SelectionPage selection_{this};
+    Demo::SlidersPage  sliders_{this};
     Demo::ExpanderPage expander_{this};
+    Demo::CardPage     card_{this};
+    Demo::PopupsPage   popups_{this};
+    Demo::DialogPage   dialogPg_{this};
     Demo::SettingsPage settings_{this};
-    Demo::DemoPage* page_[3] = { &home_, &expander_, &settings_ };
+    Demo::DemoPage* page_[kPageCount] = {
+        &home_, &buttons_, &selection_, &sliders_, &expander_,
+        &card_, &popups_, &dialogPg_, &settings_ };
 };
