@@ -28,6 +28,7 @@
 #include "pages/SettingsPage.h"
 
 using namespace ModernDesign;
+using namespace ModernDesign::Controls;
 
 namespace {
 constexpr float kMargin = 28.0f;
