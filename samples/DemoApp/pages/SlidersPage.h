@@ -5,7 +5,6 @@
 #include "controls/ProgressBar.h"
 #include "controls/ProgressRing.h"
 
-using namespace ModernDesign::Controls;
 class DemoWindow;
 
 namespace ModernDesign::Demo {

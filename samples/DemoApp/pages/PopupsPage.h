@@ -3,7 +3,6 @@
 #include "DemoPage.h"
 #include "controls/Button.h"
 
-using namespace ModernDesign::Controls;
 class DemoWindow;
 
 namespace ModernDesign::Demo {

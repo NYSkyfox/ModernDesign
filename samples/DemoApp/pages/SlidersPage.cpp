@@ -3,12 +3,11 @@
 #include "DemoApp.h"
 
 using namespace ModernDesign;
-using namespace ModernDesign::Controls;
 
 namespace ModernDesign::Demo {
 
 void SlidersPage::Bind() {
-    slider_.SetProgress(0.5f);
+    slider_.SetValue(0.5f);
     progBar_.SetProgress(0.65f);
 }
 

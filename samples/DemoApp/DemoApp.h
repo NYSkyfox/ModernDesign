@@ -28,7 +28,6 @@
 #include "pages/SettingsPage.h"
 
 using namespace ModernDesign;
-using namespace ModernDesign::Controls;
 
 namespace {
 constexpr float kMargin = 28.0f;
@@ -99,7 +98,7 @@ protected:
 
     bool OnUpdate(float dt) override {
         bool anim = nav_.Update(dt);
-        for (auto* p : pages()) anim |= p->Update(dt);
+        for (int i = 0; i < kPageCount; ++i) anim |= page_[i]->Update(dt);
         anim |= dialog_.Update(dt);
         anim |= flyout_.Update(dt);
         anim |= menu_.Update(dt);

@@ -4,7 +4,6 @@
 #include "controls/SettingsCard.h"
 #include "controls/HyperlinkButton.h"
 
-using namespace ModernDesign::Controls;
 
 class DemoWindow;
 

@@ -4,7 +4,6 @@
 #include <shellapi.h>
 
 using namespace ModernDesign;
-using namespace ModernDesign::Controls;
 
 namespace ModernDesign::Demo {
 

@@ -4,7 +4,6 @@
 #include "controls/Button.h"
 #include "controls/HyperlinkButton.h"
 
-using namespace ModernDesign::Controls;
 class DemoWindow;
 
 namespace ModernDesign::Demo {
