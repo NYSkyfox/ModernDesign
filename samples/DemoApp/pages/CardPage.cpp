@@ -8,6 +8,8 @@ using namespace ModernDesign;
 namespace ModernDesign::Demo {
 
 void CardPage::Bind() {
+    simpleCard_.SetTitle(L"Simple card");
+    simpleCard_.SetContent(L"A plain Card with title and content text.");
     setA_.SetHeader(L"Dark mode");
     setA_.SetDescription(L"Switch between light and dark");
     setA_.SetHeaderIcon(static_cast<int>(FluentIcon::Home));
@@ -49,7 +51,6 @@ void CardPage::Layout() {
 
 bool CardPage::Update(float dt) {
     bool anim = false;
-    anim |= simpleCard_.Update(dt);
     anim |= setA_.Update(dt); anim |= setB_.Update(dt);
     anim |= togA_.Update(dt);
     return anim;
@@ -65,19 +66,19 @@ void CardPage::Draw() {
 }
 
 void CardPage::OnMouseMove(float x, float y) {
-    simpleCard_.OnMouseMove(x, y); setA_.OnMouseMove(x, y); setB_.OnMouseMove(x, y);
+    setA_.OnMouseMove(x, y); setB_.OnMouseMove(x, y);
     togA_.OnMouseMove(x, y);
 }
 void CardPage::OnMouseDown(float x, float y) {
-    simpleCard_.OnMouseDown(x, y); setA_.OnMouseDown(x, y); setB_.OnMouseDown(x, y);
+    setA_.OnMouseDown(x, y); setB_.OnMouseDown(x, y);
     togA_.OnMouseDown(x, y);
 }
 void CardPage::OnMouseUp(float x, float y) {
-    simpleCard_.OnMouseUp(x, y); setA_.OnMouseUp(x, y); setB_.OnMouseUp(x, y);
+    setA_.OnMouseUp(x, y); setB_.OnMouseUp(x, y);
     togA_.OnMouseUp(x, y);
 }
 void CardPage::OnMouseLeave() {
-    simpleCard_.OnMouseLeave(); setA_.OnMouseLeave(); setB_.OnMouseLeave();
+    setA_.OnMouseLeave(); setB_.OnMouseLeave();
     togA_.OnMouseLeave();
 }
 
