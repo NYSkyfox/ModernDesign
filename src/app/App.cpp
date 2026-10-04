@@ -411,7 +411,7 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
             float g2 = glyphW * 0.7f, g2h = glyphH * 0.7f;   // 还原：双方块略小
             if (hwnd_ && AppIsZoomed(hwnd_)) {
                 // 还原：前框（偏左下，完整）+ 后框（偏右上，露出右上角两段边）
-                float ox = g2 * 0.12f, oy = g2h * 0.12f;
+                float ox = g2 * 0.08f, oy = g2h * 0.08f;
                 // 前框（完整，偏左下）
                 r.StrokeRect(RectF(cx - g2 * 0.5f - ox, cy - g2h * 0.5f + oy,
                                    g2, g2h), 1.0f * s, g);
