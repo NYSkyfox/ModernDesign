@@ -50,6 +50,11 @@ public:
     bool IsBackEnabled() const { return backEnabled_; }
     void SetBackRequestedCallback(std::function<void()> cb) { onBackRequested_ = std::move(cb); }
 
+    // 标题栏汉堡按钮（back 右侧，对齐 WinUI 3 TitleBar PaneToggleButton）
+    void SetPaneToggleEnabled(bool e) { paneToggleEnabled_ = e; }
+    bool IsPaneToggleEnabled() const { return paneToggleEnabled_; }
+    void SetPaneToggleCallback(std::function<void()> cb) { onPaneToggle_ = std::move(cb); }
+
 
     // 子类重写点
 protected:
@@ -102,6 +107,7 @@ private:
     int   CaptionButtonAt(float x, float y) const;           // DIP，-1 无
     void  HandleCaptionButton(int which);
     RectF BackButtonRect(float scale) const;
+    RectF PaneToggleButtonRect(float scale) const;
 
     // 消息循环辅助
     static void RequestQuit(HWND hwnd);
@@ -123,6 +129,8 @@ private:
     int   titleBarBtn_ = -1;           // 按下的标题按钮（0 min/1 max/2 close/-2 back）
     bool  backEnabled_ = true;         // 后退按钮是否可用
     std::function<void()> onBackRequested_;
+    bool  paneToggleEnabled_ = true; // 汉堡按钮是否可见
+    std::function<void()> onPaneToggle_;
     ULONGLONG lastFrameMs_ = 0;
     ULONGLONG lastThemePollMs_ = 0;
     bool currentLight_ = true;

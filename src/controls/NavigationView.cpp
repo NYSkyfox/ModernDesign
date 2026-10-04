@@ -182,20 +182,9 @@ RectF NavigationView::TopBarRect() const {
 }
 
 RectF NavigationView::HamburgerRect() const {
-    float s = sc_;
-    if (mode_ == DisplayMode::Top) return RectF();
-    float pad = kPanePad * s;
-    float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    // 规格：.has-pane-title 时按钮宽度 = OpenPaneLength - 8 = 312；无标题/紧凑时 40
-    float btnW = FzMx(innerW, kHamW * s);
-    float x = bounds_.x + pad;
-    float y = bounds_.y + pad + kItemM * s;
-    if (mode_ == DisplayMode::LeftMinimal) {
-        // Minimal：不占位，汉堡浮在左上角（面板收起时也要可见）
-        x = bounds_.x + pad;
-        y = bounds_.y + pad;
-    }
-    return RectF(x, y, btnW, kHamH * s);
+    // 汉堡按钮已移至 App 标题栏（back 右侧），面板内不再绘制/响应。
+    // 保留空矩形：交互/绘制段靠 IsEmpty() 自动跳过。
+    return RectF();
 }
 
 RectF NavigationView::PlacedRect(int i) const {
@@ -252,7 +241,8 @@ void NavigationView::RebuildLayout() {
     float pad = kPanePad * s;
     float px = bounds_.x;
     float innerW = FzMx(0.0f, PaneWidthDip() * s - 2.0f * pad);
-    float y = bounds_.y + pad + kHamRowH * s;   // command row（back + hamburger 同行）
+    // 面板顶部不再有 command row（hamburger 移至标题栏）：菜单项从顶部开始
+    float y = bounds_.y + pad + kItemM * s;
 
     for (size_t i = 0; i < items_.size(); ++i) {
         Item& it = items_[i];

@@ -322,6 +322,11 @@ RectF App::BackButtonRect(float scale) const {
     float bw = 40.0f * scale, bh = kCapH * scale;
     return RectF(4.0f * scale, 0.0f, bw, bh);
 }
+RectF App::PaneToggleButtonRect(float scale) const {
+    // back 右侧：44px 起，40 宽（对齐 WinUI 3 TitleBar PaneToggleButton）
+    float bw = 40.0f * scale, bh = kCapH * scale;
+    return RectF(44.0f * scale, 0.0f, bw, bh);
+}
 
 int App::CaptionButtonAt(float x, float y) const {
     float s = FzMx(0.001f, dpiScale_);
@@ -347,31 +352,37 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
     const bool light = th.lightMode;
     Color bg = th.WindowBg();
     Color text = th.TextPrimary();
-    Color stroke = light ? Color(0, 0, 0, 0.10f) : Color(1, 1, 1, 0.10f);
     Color hovBg  = light ? Color(0, 0, 0, 0.05f) : Color(1, 1, 1, 0.06f);
     Color prsBg  = light ? Color(0, 0, 0, 0.09f) : Color(1, 1, 1, 0.10f);
     Color closeHov  = Color(0.898f, 0.05f, 0.05f, 1.0f);
     Color closePrs  = Color(0.788f, 0.0f, 0.0f, 1.0f);
-    // ---- 背景 ----
+    // ---- 背景（无分割线，对齐 WinUI 3 自绘标题栏）----
     r.FillRect(RectF(0, 0, ClientWidth(), tbH), bg);
-    r.DrawLine(0, tbH, ClientWidth(), tbH, 1.0f * s, stroke);
 
-    // ---- 后退按钮（最左，ChevronLeft 旋转 +90° 朝左）----
+    // ---- 后退按钮（最左，ArrowLeft 带杆朝左，E72B Back）----
     {
         RectF br = BackButtonRect(s);
         bool hov = (mouseIn_ && br.Contains(mouseDipX_, mouseDipY_)) && !titleBarDown_ && backEnabled_;
         bool prs = (titleBarDown_ && titleBarBtn_ == -2);
-        if ((hov || prs) && backEnabled_) {
+        if ((hov || prs) && backEnabled_)
             r.FillRect(br, prs ? prsBg : hovBg);
-        }
         Color g = backEnabled_ ? text : th.TextDisabled();
-        // 官方后退按钮 = Segoe Fluent Icons E72B "Back"（带杆左箭头）
-        // 用 Fluent Arrow Left 16 矢量（与 Home 同源同质量），无旋转
         DrawFluentIconCentered(r, FluentIcon::ArrowLeft, br, 14.0f * s, g, 0.0f);
     }
 
-    // ---- 标题文字（避开左侧 back 区 + 右侧按钮区）----
-    float titleLeft = 44.0f * s;   // back 按钮区之后
+    // ---- 汉堡按钮（back 右侧，Navigation 图标）----
+    {
+        RectF br = PaneToggleButtonRect(s);
+        bool hov = (mouseIn_ && br.Contains(mouseDipX_, mouseDipY_)) && !titleBarDown_ && paneToggleEnabled_;
+        bool prs = (titleBarDown_ && titleBarBtn_ == -3);
+        if ((hov || prs) && paneToggleEnabled_)
+            r.FillRect(br, prs ? prsBg : hovBg);
+        Color g = paneToggleEnabled_ ? text : th.TextDisabled();
+        DrawFluentIconCentered(r, FluentIcon::Navigation, br, 16.0f * s, g, 0.0f);
+    }
+
+    // ---- 标题文字（back + hamburger 区之后）----
+    float titleLeft = 88.0f * s;
     float btnLeft = ClientWidth() - 3 * kCapBw * s;
     if (btnLeft > titleLeft + 8.0f * s) {
         r.DrawText(L"Modern Design", titleLeft, 0.0f, btnLeft - 16.0f * s, tbH,
@@ -582,6 +593,8 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
                 if (btn >= 0) return HTCLIENT;   // 标题按钮：走 WM_LBUTTON*
                 if (backEnabled_ && BackButtonRect(dpiScale_).Contains(bx, by))
                     return HTCLIENT;             // 后退按钮：走 WM_LBUTTON*
+                if (paneToggleEnabled_ && PaneToggleButtonRect(dpiScale_).Contains(bx, by))
+                    return HTCLIENT;             // 汉堡按钮：走 WM_LBUTTON*
                 return HTCAPTION;                // 标题栏其余：拖拽/双击最大化
             }
         }
@@ -658,12 +671,14 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
         float x = static_cast<float>(GET_X_LPARAM(l)) / dpiScale_;
         float y = static_cast<float>(GET_Y_LPARAM(l)) / dpiScale_;
         int cb = hwnd_ ? CaptionButtonAt(x, y) : -1;
-        int backHit = -1;
+        int spec = -1;   // 特殊标题按钮：-2 back / -3 汉堡
         if (cb < 0 && backEnabled_ && BackButtonRect(dpiScale_).Contains(x, y))
-            backHit = -2;
-        if (cb >= 0 || backHit >= 0) {
+            spec = -2;
+        if (spec < 0 && paneToggleEnabled_ && PaneToggleButtonRect(dpiScale_).Contains(x, y))
+            spec = -3;
+        if (cb >= 0 || spec < 0) {
             titleBarDown_ = true;
-            titleBarBtn_ = (cb >= 0) ? cb : -2;
+            titleBarBtn_ = (cb >= 0) ? cb : spec;
             MarkDirty();
             return 0;   // 标题按钮：不转发给页面
         }
@@ -683,8 +698,11 @@ LRESULT App::HandleMessage(HWND h, UINT m, WPARAM w, LPARAM l) {
             if (pressed >= 0 && CaptionButtonAt(x, y) == pressed) {
                 HandleCaptionButton(pressed);
             } else if (pressed == -2 && backEnabled_ &&
-                       BackButtonRect(dpiScale_).Contains(x, y)) {
+                        BackButtonRect(dpiScale_).Contains(x, y)) {
                 if (onBackRequested_) onBackRequested_();
+            } else if (pressed == -3 && paneToggleEnabled_ &&
+                        PaneToggleButtonRect(dpiScale_).Contains(x, y)) {
+                if (onPaneToggle_) onPaneToggle_();
             }
             MarkDirty();
             return 0;

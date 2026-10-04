@@ -165,6 +165,11 @@ private:
         current_ = 1;
         prevSel_ = 2;
         SetBackEnabled(false);
+        // 标题栏汉堡按钮（back 右侧）：切换导航面板展开/收起
+        SetPaneToggleCallback([this] {
+            nav_.TogglePane();
+            Invalidate();
+        });
         // 后退按钮（标题栏最左）：回退上一次选择的导航项
         SetBackRequestedCallback([this] {
             if (navBackStack_.empty()) return;
