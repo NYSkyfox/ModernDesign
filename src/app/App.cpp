@@ -410,15 +410,18 @@ void App::DrawTitleBar(Renderer& r, const Theme& th, float scale) {
         } else if (w == 1) {  // 最大化 / 还原
             float g2 = glyphW * 0.7f, g2h = glyphH * 0.7f;   // 还原：双方块略小
             if (hwnd_ && AppIsZoomed(hwnd_)) {
-                // 还原：前（右上）后（左下）两个重叠方框
+                // 还原：前框（偏左下，完整）+ 后框（偏右上，露出右上角两段边）
                 float ox = g2 * 0.28f, oy = g2h * 0.28f;
-                // 前框（完整）
-                r.StrokeRect(RectF(cx - g2 * 0.5f + ox, cy - g2h * 0.5f - oy,
+                // 前框（完整，偏左下）
+                r.StrokeRect(RectF(cx - g2 * 0.5f - ox, cy - g2h * 0.5f + oy,
                                    g2, g2h), 1.0f * s, g);
-                // 后框：只画左 + 下两段（被前框遮挡的右上省略）
-                float bx = cx - g2 * 0.5f - ox, by = cy - g2h * 0.5f + oy;
-                r.DrawLine(bx, by + g2h, bx, by, 1.0f * s, g);             // 左竖
-                r.DrawLine(bx, by + g2h, bx + g2, by + g2h, 1.0f * s, g);  // 下横
+                // 后框（偏右上）：只画顶边 + 右边（右上角露出的两段）
+                float hx     = cx - g2 * 0.5f + ox;    // 后框左
+                float htop   = cy - g2h * 0.5f - oy;   // 后框顶
+                float hright = cx + g2 * 0.5f + ox;    // 后框右
+                float hbot   = cy + g2h * 0.5f - oy;   // 后框底
+                r.DrawLine(hx, htop, hright, htop, 1.0f * s, g);     // 顶边
+                r.DrawLine(hright, htop, hright, hbot, 1.0f * s, g); // 右边
             } else {
                 r.StrokeRect(RectF(cx - glyphW * 0.5f, cy - glyphH * 0.5f,
                                    glyphW, glyphH), 1.0f * s, g);
