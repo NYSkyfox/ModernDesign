@@ -6,7 +6,7 @@
 namespace ModernDesign {
 
 static constexpr float kSliderTrackHeight = 4.0f;  // track 4px
-static constexpr float kSliderThumbSize = 22.0f;   // thumb 22px (WinUIonWeb)
+static constexpr float kSliderThumbSize = 24.0f;   // thumb 24px (WinUI SliderHorizontalThumbWidth)
 static constexpr float kSliderDotSize = 12.0f;     // 内嵌 accent 点 12px
 
 void Slider::OnMouseMove(float x, float y) {

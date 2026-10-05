@@ -57,7 +57,7 @@ private:
     float toggleTo_ = 0.0f;
     float toggleElapsed_ = 0.0f;
     bool  toggleAnim_ = false;
-    static constexpr float kToggleDur = 0.15f;
+    static constexpr float kToggleDur = 0.25f;
 };
 
 } // namespace ModernDesign
