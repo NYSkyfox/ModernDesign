@@ -14,7 +14,7 @@ namespace ModernDesign {
 // ContentDialog — 内容对话框（规格来源：WinUIonWeb ContentDialog.vue）
 //
 // 结构：
-//   遮罩 SmokeLayer   整窗，rgba(0,0,0,0.302)，83ms 线性淡入淡出
+//   遮罩 SmokeLayer   整窗，rgba(0,0,0,0.6)，83ms 线性淡入淡出
 //   卡片（居中）
 //     ├ 内容区   padding 24，bg #FFFFFF / rgba(43,43,43,0)，底边 1px 分隔
 //     │   ├ Title  20/28 w600，下间距 12
@@ -22,7 +22,7 @@ namespace ModernDesign {
 //     └ CommandSpace  padding 24，bg #F3F3F3 / #202020
 //         └ 按钮等宽（1/2 或 1/3 列），间距 8，高 32
 //   卡片：宽 clamp(320, 548)，高 clamp(184, min(756, 可用高))，
-//         圆角 8，描边 1px rgba(117,117,117,.4)，
+//         圆角 4，描边 1px rgba(117,117,117,.4)，
 //         阴影 0 32px 64px rgba(0,0,0,0.28)
 //   动画：卡片 scale 1.05 → 1.0（250ms cubic-bezier(0,0,0,1)）
 //                1.0 → 1.05（167ms 同曲线）
@@ -165,12 +165,12 @@ private:
     static constexpr float kMaxHeight   = 756.0f;
     static constexpr float kPad         = 24.0f;   // ContentDialogPadding
     static constexpr float kOuterPad    = 24.0f;   // 遮罩内边距
-    static constexpr float kCorner      = 8.0f;    // OverlayCornerRadius
+    static constexpr float kCorner      = 4.0f;    // ControlCornerRadius
     static constexpr float kBorderW     = 1.0f;
     static constexpr float kShadowOffY  = 32.0f;
     static constexpr float kShadowBlur  = 64.0f;
     static constexpr float kShadowAlpha = 0.28f;
-    static constexpr float kSmokeAlpha  = 0.302f;
+    static constexpr float kSmokeAlpha  = 0.6f;    // ContentDialogDimmingColor #99000000
     static constexpr float kTitleSize   = 20.0f;
     static constexpr float kTitleLine   = 28.0f;
     static constexpr float kTitleGap    = 12.0f;
