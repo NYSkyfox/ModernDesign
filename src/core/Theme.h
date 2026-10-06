@@ -148,7 +148,8 @@ struct Theme {
     // 快捷获取 Color
     Color WindowBg() const { return Color(windowBgR, windowBgG, windowBgB, 1.0f); }
     Color ContentBg() const { return Color(contentBgR, contentBgG, contentBgB, 1.0f); }
-    Color NavContentBg() const { return Color(navContentBgR, navContentBgG, navContentBgB, 1.0f); }
+    // 整窗背景统一（WinUI 3：Pane 与 Content 均透同一层 Mica 底，不分区）
+    Color NavContentBg() const { return Color(windowBgR, windowBgG, windowBgB, 1.0f); }
     Color CardBg() const { return Color(cardBgR, cardBgG, cardBgB, 1.0f); }
     Color CardBorder() const { return Color(cardBorderR, cardBorderG, cardBorderB, cardBorderA); }
     Color TextPrimary() const { return Color(textPrimaryR, textPrimaryG, textPrimaryB, 1.0f); }
