@@ -521,11 +521,9 @@ void NavigationView::Draw(Renderer& renderer, const Theme& theme, float scale) {
         }
     }
 
-    // ---- 3) 覆盖模式下的面板（画在内容之上）+ 右缘描边 ----
+    // ---- 3) 覆盖模式下的面板（画在内容之上）----
     if (overlayPane && paneW > 1.0f && paneW > RailWidthDip() * s + 1.0f) {
         renderer.FillRect(RectF(bounds_.x, bounds_.y, paneW, bounds_.h), navBg);
-        renderer.DrawLine(bounds_.x + paneW, bounds_.y, bounds_.x + paneW, bounds_.y + bounds_.h,
-                          1.0f * s, stroke);
     }
 
     // ---- 4) 菜单项 ----

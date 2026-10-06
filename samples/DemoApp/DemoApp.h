@@ -56,13 +56,11 @@ public:
     // 主题切换转发（供页面调用；ToggleTheme 是 App 的 protected 成员）
     void ToggleThemePublic() { ToggleTheme(); }
 
-    // 页面标题 + 分隔线
+    // 页面标题
     void DrawPageHeader(const std::wstring& title, float s) {
         DrawText(title, ContX(), HeadY(), ContW(), 44.0f * s,
                  L"Segoe UI", 28.0f * s, DWRITE_FONT_WEIGHT_SEMI_BOLD, GetTheme().TextPrimary(),
                  DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-        DrawLine(ContX(), RuleY(), ContX() + ContW(), RuleY(),
-                 1.0f * s, GetTheme().CardBorder());
     }
 
     // 页面作为友元：可直接访问下方共享资源（flyBtn_/flyout_/tip_/nav_ 等）
