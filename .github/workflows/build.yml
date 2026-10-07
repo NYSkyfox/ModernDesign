@@ -44,6 +44,7 @@ jobs:
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page sliders   -OutName screenshot_sliders.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page expander  -OutName screenshot_expander.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page card      -OutName screenshot_card.png
+           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Page showcase  -OutName screenshot_showcase.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup flyout  -OutName screenshot_flyout.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup menu    -OutName screenshot_menu.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Popup tooltip -OutName screenshot_tooltip.png
@@ -58,6 +59,7 @@ jobs:
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -NavMode top -OutName screenshot_dark_top.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -ShowDialog -OutName screenshot_dark_dialog.png
           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -Page settings -OutName screenshot_dark_settings.png
+           pwsh -NoProfile -ExecutionPolicy Bypass -File screenshot.ps1 -Dark -Page showcase -OutName screenshot_dark_showcase.png
 
       - name: Version artifacts (sha7 + timestamp)
         shell: pwsh
@@ -77,6 +79,7 @@ jobs:
           if (Test-Path 'screenshot_sliders.png')  { Copy-Item 'screenshot_sliders.png'  "${ver}_sliders.png" -Force }
           if (Test-Path 'screenshot_expander.png') { Copy-Item 'screenshot_expander.png' "${ver}_expander.png" -Force }
           if (Test-Path 'screenshot_card.png')     { Copy-Item 'screenshot_card.png'     "${ver}_card.png" -Force }
+           if (Test-Path 'screenshot_showcase.png') { Copy-Item 'screenshot_showcase.png' "${ver}_showcase.png" -Force }
           if (Test-Path 'screenshot_dialog.png')  { Copy-Item 'screenshot_dialog.png'  "${ver}_dialog.png" -Force }
           if (Test-Path 'screenshot_flyout.png')  { Copy-Item 'screenshot_flyout.png'  "${ver}_flyout.png" -Force }
           if (Test-Path 'screenshot_menu.png')    { Copy-Item 'screenshot_menu.png'    "${ver}_menu.png" -Force }
@@ -85,6 +88,7 @@ jobs:
            if (Test-Path 'screenshot_dark.png') { Copy-Item 'screenshot_dark.png' "${ver}_dark.png" -Force }
            if (Test-Path 'screenshot_dark_top.png') { Copy-Item 'screenshot_dark_top.png' "${ver}_dark_top.png" -Force }
            if (Test-Path 'screenshot_dark_settings.png') { Copy-Item 'screenshot_dark_settings.png' "${ver}_dark_settings.png" -Force }
+            if (Test-Path 'screenshot_dark_showcase.png') { Copy-Item 'screenshot_dark_showcase.png' "${ver}_dark_showcase.png" -Force }
            if (Test-Path 'screenshot_dark_dialog.png') { Copy-Item 'screenshot_dark_dialog.png' "${ver}_dark_dialog.png" -Force }
           Write-Host "artifact version: ${ver}"
           Get-ChildItem ModernDesign_* -ErrorAction SilentlyContinue |

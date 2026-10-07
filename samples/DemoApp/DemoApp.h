@@ -26,6 +26,7 @@
 #include "pages/PopupsPage.h"
 #include "pages/DialogPage.h"
 #include "pages/SettingsPage.h"
+#include "pages/ShowcasePage.h"
 
 using namespace ModernDesign;
 using namespace ModernDesign::Controls;
@@ -73,6 +74,7 @@ public:
     friend class ModernDesign::Demo::PopupsPage;
     friend class ModernDesign::Demo::DialogPage;
     friend class ModernDesign::Demo::SettingsPage;
+    friend class ModernDesign::Demo::ShowcasePage;
 
 protected:
     void OnLayout() override {
@@ -151,7 +153,7 @@ private:
     // ---- 页面数组（page_ index -> 页对象）----
     // 0=Home 1=Buttons 2=Selection 3=Sliders 4=Expander 5=Card 6=Popups 7=Dialog 8=Settings
     Demo::DemoPage** pages() { return page_; }
-    static constexpr int kPageCount = 9;
+    static constexpr int kPageCount = 10;
 
     // ---- 导航绑定（一次）----
     // 导航项 -> 页 index（-1 = 不切页）
@@ -168,13 +170,12 @@ private:
                       { { L"Buttons" }, { L"Selection" }, { L"Sliders" } },     // 2 3 4
                       true);
         nav_.AddGroup(L"Container", FluentIcon::Grid,                            // 5 (组头)
-                      { { L"Expander" }, { L"Card" } },                          // 6 7
-                      true);
-        nav_.AddItem({ L"Popups", FluentIcon::Info });                          // 8
-        nav_.AddItem({ L"Dialog", FluentIcon::ChevronUpDown });                 // 9
-        nav_.SetSettings(L"Settings");                                          // 10
-
-        pageMap_ = { 0, -1, 1, 2, 3, -1, 4, 5, 6, 7, 8 };
+              { { L"Expander" }, { L"Card" }, { L"Showcase" } },          // 6 7 8
+              true);
+nav_.AddItem({ L"Popups", FluentIcon::Info });                          // 9
+nav_.AddItem({ L"Dialog", FluentIcon::ChevronUpDown });                 // 10
+nav_.SetSettings(L"Settings");                                          // 11
+pageMap_ = { 0, -1, 1, 2, 3, -1, 4, 5, 9, 6, 7, 8 };
         nav_.SetSelectedIndex(0);            // 默认停在 Home 页
         current_ = 0;
         prevSel_ = 0;
@@ -214,6 +215,7 @@ private:
         sliders_.Bind();
         expander_.Bind();
         card_.Bind();
+        showcase_.Bind();
         settings_.Bind();
 
         // 全局浮层/弹窗绑定
@@ -240,9 +242,10 @@ private:
                 else if (pg == L"sliders")   { navIdx = 4;  page = 3; }
                 else if (pg == L"expander")  { navIdx = 6;  page = 4; }
                 else if (pg == L"card")      { navIdx = 7;  page = 5; }
-                else if (pg == L"popups")    { navIdx = 8;  page = 6; }
-                else if (pg == L"dialog")    { navIdx = 9;  page = 7; }
-                else if (pg == L"settings")  { navIdx = 10; page = 8; }
+                else if (pg == L"showcase")  { navIdx = 8;  page = 9; }
+                else if (pg == L"popups")    { navIdx = 9;  page = 6; }
+                else if (pg == L"dialog")    { navIdx = 10; page = 7; }
+                else if (pg == L"settings")  { navIdx = 11; page = 8; }
                 if (page >= 0) {
                     nav_.SetSelectedIndex(navIdx);
                     current_ = page;
@@ -342,7 +345,7 @@ private:
 
         wchar_t dbuf[8] = {};
         if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_DIALOG", dbuf, 8) > 0 && dbuf[0] == L'1') {
-            nav_.SetSelectedIndex(9);
+            nav_.SetSelectedIndex(10);
             current_ = 7;
             dialog_.Show();
         }
@@ -393,7 +396,7 @@ private:
         if (GetEnvironmentVariableW(L"MODERNDESIGN_SHOW_TOOLTIP", b3, 8) > 0 && b3[0] == L'1')
             pendingPopup_ = 3;
         if (pendingPopup_ != 0) {
-            nav_.SetSelectedIndex(8);
+            nav_.SetSelectedIndex(9);
             current_ = 6;
         }
     }
@@ -426,10 +429,11 @@ private:
     Demo::SlidersPage  sliders_{this};
     Demo::ExpanderPage expander_{this};
     Demo::CardPage     card_{this};
+    Demo::ShowcasePage showcase_{this};
     Demo::PopupsPage   popups_{this};
     Demo::DialogPage   dialogPg_{this};
     Demo::SettingsPage settings_{this};
     Demo::DemoPage* page_[kPageCount] = {
         &home_, &buttons_, &selection_, &sliders_, &expander_,
-        &card_, &popups_, &dialogPg_, &settings_ };
+        &card_, &popups_, &dialogPg_, &settings_, &showcase_ };
 };

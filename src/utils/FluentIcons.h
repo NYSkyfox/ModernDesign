@@ -30,10 +30,21 @@ enum class FluentIcon {
     ChevronUp,     // 12px
     ChevronUpDown, // 16px
     ChevronLeft,   // 12px（ChevronDown 旋转 -90°）
+    ChevronRight,  // 16px
     ArrowLeft,     // 16px —— 官方后退按钮（带杆左箭头，对应 E72B "Back"）
     Checkmark,     // 16px
     RadioButton,   // 16px（filled，菜单单选标记）
     Info,          // 20px
+    Star,          // 20px
+    StarFilled,    // 20px
+    PersonCircle,  // 20px
+    Subtract,      // 16px
+    Add,           // 16px
+    DismissCircle, // 20px
+    ErrorCircle,   // 20px
+    CheckmarkCircle, // 20px
+    InfoCircle,    // 20px
+    Alert,         // 20px
 };
 
 // 在 (x, y) 为左上角、边长 size 的方盒内绘制图标

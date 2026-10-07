@@ -67,6 +67,10 @@ set(MD_CONTROL_SOURCES
     src/controls/Card.cpp
     src/controls/SettingsCard.cpp
     src/controls/TextBlock.cpp
+    src/controls/InfoBadge.cpp
+    src/controls/PipsPager.cpp
+    src/controls/RatingControl.cpp
+    src/controls/PersonPicture.cpp
 )
 
 set(MD_UTIL_SOURCES

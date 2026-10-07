@@ -12,6 +12,7 @@ add_executable(DemoAppDemo main.cpp
     pages/SlidersPage.cpp
     pages/ExpanderPage.cpp
     pages/CardPage.cpp
+    pages/ShowcasePage.cpp
     pages/PopupsPage.cpp
     pages/DialogPage.cpp
     pages/SettingsPage.cpp
