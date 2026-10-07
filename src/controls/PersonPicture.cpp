@@ -2,6 +2,7 @@
 #include "core/Renderer.h"
 #include "core/Theme.h"
 #include "controls/PersonPicture.h"
+#include "utils/FluentIcons.h"
 
 namespace ModernDesign {
 
